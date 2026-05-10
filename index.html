@@ -1,6 +1,14 @@
 <!DOCTYPE html>
 <html lang="hi">
 <head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-535114179"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-535114179');
+    </script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Worker App - Malegaon</title>
@@ -16,7 +24,6 @@
         :root { --primary: #0d6efd; --success: #198754; --warning: #ffc107; --danger: #dc3545; --bg: #f0f2f5; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding-bottom: 60px; overflow-x: hidden; }
         
-        /* Updated Install Banner */
         #installBanner { background: var(--success); color: white; padding: 12px; font-weight: bold; font-size: 14px; display: none; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 1001; position: relative;}
         
         .header { background: #1e293b; color: white; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; }
@@ -28,7 +35,7 @@
         .worker-info { flex-grow: 1; }
         .worker-info b { font-size: 16px; color: #1e293b; }
         .loc-badge { background: #e2e8f0; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
-        .loc-special { background: #cce5ff; color: #004085; }
+        
         .side-menu { position: fixed; top: 0; width: 85%; max-width: 380px; height: 100%; background: white; z-index: 2000; transition: 0.3s; padding: 15px; box-sizing: border-box; overflow-y: auto; box-shadow: 0 0 20px rgba(0,0,0,0.3); }
         .left-menu { left: -400px; border-right: 4px solid var(--primary); }
         .right-menu { right: -400px; border-left: 4px solid var(--success); }
@@ -38,10 +45,12 @@
         input, select, textarea { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
         button { cursor: pointer; border: none; border-radius: 6px; font-weight: bold; padding: 10px; }
         .admin-btn { background: var(--primary); color: white; width: 100%; margin-bottom: 10px; }
+        
         .rate-table { width: 100%; font-size: 10px; border-collapse: collapse; margin-top: 10px; }
         .rate-table th { background: #f8fafc; padding: 6px 2px; border: 1px solid #e2e8f0; }
         .rate-table td { padding: 4px 2px; border: 1px solid #e2e8f0; text-align: center; }
         .rate-in { width: 42px; padding: 4px 2px; border: 1px solid #cbd5e1; text-align: center; border-radius: 4px; font-size: 10px; }
+        
         .photo-preview { width: 100%; height: 120px; background: #f1f5f9; border: 2px dashed #cbd5e1; border-radius: 8px; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
         .photo-preview img { width: 100%; height: 100%; object-fit: cover; }
         .chat-btn { position: fixed; bottom: 20px; right: 20px; background: var(--primary); color: white; width: 60px; height: 60px; border-radius: 50%; font-size: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 900; }
@@ -50,7 +59,6 @@
         #chatBox { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
         .msg { max-width: 80%; padding: 10px; border-radius: 8px; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .msg.me { align-self: flex-end; background: #dcf8c6; }
-        .msg-name { font-size: 10px; color: #555; font-weight: bold; margin-bottom: 4px; }
         .chat-input-area { background: white; padding: 10px; display: flex; gap: 10px; align-items: center; }
     </style>
 </head>
@@ -88,7 +96,7 @@
         <div id="catEditor" style="font-size:12px;"></div>
     </div>
     <div style="background:#fff; padding:10px; border-radius:8px; margin-top:15px; border:1px solid #ddd;">
-        <h4>📒 Judai Rate Chart</h4>
+        <h4>📒 Judai Rate Chart (Din)</h4>
         <table class="rate-table">
             <thead><tr><th>Taag</th><th>Cott</th><th>C-Ang</th><th>PC</th><th>P-Ang</th></tr></thead>
             <tbody id="rateBody"></tbody>
@@ -153,7 +161,6 @@
 
     let base64Photo = "", myWorkerId = localStorage.getItem('my_worker_id'), isAdmin = localStorage.getItem('admin_auth') === 'true';
 
-    // --- INSTALL FEATURE ---
     let deferredPrompt;
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
@@ -173,14 +180,11 @@
     for(let t=2000; t<=3400; t+=100) rBody += `<tr><td><b>${t}</b></td><td><input type="number" id="c${t}" class="rate-in" disabled></td><td><input type="number" id="ca${t}" class="rate-in" disabled></td><td><input type="number" id="p${t}" class="rate-in" disabled></td><td><input type="number" id="pa${t}" class="rate-in" disabled></td></tr>`;
     document.getElementById('rateBody').innerHTML = rBody;
 
-    // --- NAYA ADMIN PASSWORD (UPDATED) ---
     function checkAdmin() { 
         if(document.getElementById('adminPass').value === 'malegaongathni.app') { 
             localStorage.setItem('admin_auth', 'true'); 
             location.reload(); 
-        } else {
-            alert("Wrong Password!"); 
-        }
+        } else { alert("Wrong Password!"); }
     }
     
     function logoutAdmin() { localStorage.removeItem('admin_auth'); location.reload(); }
@@ -206,22 +210,32 @@
     function setFree() { db.ref('workers/'+myWorkerId).update({busyUntil: 0, calls: 0}).then(()=>{ alert("Status: FREE"); closeMenus(); }); }
     function makeCall(id, currentCalls) { let newCount = (currentCalls || 0) + 1; let update = { calls: newCount }; if(newCount >= 3) { update.busyUntil = Date.now() + (24 * 3600000); update.calls = 0; alert("Is number par bahut call gaye hain. Ye 24 ghante ke liye busy set ho gaya hai."); } db.ref('workers/'+id).update(update); window.location.href = `tel:${event.target.dataset.phone}`; }
 
-    // --- DELETE FUNCTION ---
-    function deleteWorkerData(id) {
-        if(confirm("Kya aap sach mein is worker ko hamesha ke liye delete karna chahte hain?")) {
-            db.ref('workers/'+id).remove().then(() => alert("Worker Delete Ho Gaya!"));
-        }
+    function deleteWorkerData(id) { if(confirm("Kya aap sach mein delete karna chahte hain?")) { db.ref('workers/'+id).remove().then(() => alert("Worker Delete Ho Gaya!")); } }
+
+    function fetchWorkers() { 
+        let filter = document.getElementById('catFilter').value; 
+        db.ref('workers').on('value', snap => { 
+            let list = document.getElementById('workerList'); 
+            list.innerHTML = ""; 
+            let data = snap.val(); if(!data) return; 
+            let arr = []; for(let id in data) { let w = data[id]; w.id = id; arr.push(w); } 
+            arr.sort((a, b) => { let aB = a.busyUntil > Date.now(), bB = b.busyUntil > Date.now(); return (aB === bB) ? 0 : aB ? 1 : -1; }); 
+            arr.forEach(w => { 
+                if(filter === 'All' || w.cat === filter) { 
+                    let isBusy = w.busyUntil > Date.now(); 
+                    let card = `<div class="worker-card ${isBusy?'busy':''}"><img src="${w.photo || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'}" class="profile-img"><div class="worker-info"><b>${w.name}</b><br><span style="font-size:11px; color:var(--primary); font-weight:bold;">🛠️ ${w.cat || 'Worker'}</span><br><span class="loc-badge">${w.loc}</span><div style="font-size:11px; color:${isBusy?'red':'green'}; margin-top:4px;"><b>${isBusy?'🔴 BUSY':'🟢 FREE'}</b></div></div><div style="display:flex; flex-direction:column; gap:5px;">`; 
+                    if(!isBusy) card += `<button data-phone="${w.phone}" onclick="makeCall('${w.id}', ${w.calls})" style="background:var(--success); color:white; padding:6px 12px; font-size:12px;">📞 Call</button>`; 
+                    if(w.id === myWorkerId) card += `<button onclick="toggleMenu('right')" style="background:var(--warning); padding:4px; font-size:10px;">Edit</button>`; 
+                    if(isAdmin) card += `<button onclick="deleteWorkerData('${w.id}')" style="background:var(--danger); color:white; padding:4px; font-size:10px;">🗑️ Delete</button>`; 
+                    card += `</div></div>`; list.innerHTML += card; 
+                } 
+            }); 
+        }); 
     }
 
-    function fetchWorkers() { let filter = document.getElementById('catFilter').value; db.ref('workers').on('value', snap => { let list = document.getElementById('workerList'); list.innerHTML = ""; let data = snap.val(); if(!data) return; let arr = []; for(let id in data) { let w = data[id]; w.id = id; arr.push(w); } arr.sort((a, b) => { let aB = a.busyUntil > Date.now(), bB = b.busyUntil > Date.now(); return (aB === bB) ? 0 : aB ? 1 : -1; }); arr.forEach(w => { if(filter === 'All' || w.cat === filter) { let isBusy = w.busyUntil > Date.now(); let card = `<div class="worker-card ${isBusy?'busy':''}"><img src="${w.photo || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'}" class="profile-img"><div class="worker-info"><b>${w.name}</b><br><span class="loc-badge">${w.loc}</span><div style="font-size:11px; color:${isBusy?'red':'green'}; margin-top:4px;"><b>${isBusy?'🔴 BUSY':'🟢 FREE'}</b></div></div><div style="display:flex; flex-direction:column; gap:5px;">`; if(!isBusy) card += `<button data-phone="${w.phone}" onclick="makeCall('${w.id}', ${w.calls})" style="background:var(--success); color:white; padding:6px 12px; font-size:12px;">📞 Call</button>`; if(w.id === myWorkerId) card += `<button onclick="toggleMenu('right')" style="background:var(--warning); padding:4px; font-size:10px;">Edit</button>`; 
-    
-    // Yahan Delete Button add kiya gaya hai
-    if(isAdmin) card += `<button onclick="deleteWorkerData('${w.id}')" style="background:var(--danger); color:white; padding:4px; font-size:10px;">🗑️ Delete</button>`; 
-    
-    card += `</div></div>`; list.innerHTML += card; } }); }); }
-
-    function openChat() { document.getElementById('chatPage').style.display = 'flex'; loadChat(); } function closeChat() { document.getElementById('chatPage').style.display = 'none'; }
-    function loadChat() { db.ref('chat').on('value', snap => { let box = document.getElementById('chatBox'); box.innerHTML = ""; let d = snap.val(); if(!d) return; for(let key in d) { let m = d[key]; let isMe = m.senderId === myWorkerId; box.innerHTML += `<div class="msg ${isMe?'me':''}"><div class="msg-name">${m.name}</div>${m.img ? `<img src="${m.img}" style="width:100%; border-radius:4px; margin-bottom:5px;">` : ''}${m.text ? `<div>${m.text}</div>` : ''}</div>`; } box.scrollTop = box.scrollHeight; }); }
+    function openChat() { document.getElementById('chatPage').style.display = 'flex'; loadChat(); } 
+    function closeChat() { document.getElementById('chatPage').style.display = 'none'; }
+    function loadChat() { db.ref('chat').on('value', snap => { let box = document.getElementById('chatBox'); box.innerHTML = ""; let d = snap.val(); if(!d) return; for(let key in d) { let m = d[key]; let isMe = m.senderId === myWorkerId; box.innerHTML += `<div class="msg ${isMe?'me':''}"><div style="font-size:10px; color:#555; font-weight:bold; margin-bottom:4px;">${m.name}</div>${m.img ? `<img src="${m.img}" style="width:100%; border-radius:4px; margin-bottom:5px;">` : ''}${m.text ? `<div>${m.text}</div>` : ''}</div>`; } box.scrollTop = box.scrollHeight; }); }
     function sendChatPhoto(input) { if(input.files && input.files[0]) { let r = new FileReader(); r.onload = function(e) { postChatMsg("", e.target.result); }; r.readAsDataURL(input.files[0]); } }
     function sendChatMsg() { let txt = document.getElementById('chatMsg').value; if(txt) { postChatMsg(txt, ""); document.getElementById('chatMsg').value = ""; } }
     function postChatMsg(txt, imgStr) { let n = myWorkerId ? (document.getElementById('wName').value || "Worker") : "Guest"; db.ref('chat').push({ senderId: myWorkerId || 'guest', name: n, text: txt, img: imgStr, time: Date.now() }); }
