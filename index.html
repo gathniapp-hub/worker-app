@@ -75,6 +75,11 @@
     <button onclick="toggleMenu('right')" style="background:none; color:white; font-size:22px;">👤</button>
 </div>
 
+<div id="busyNotification" style="display:none; position:fixed; top:48px; left:0; width:100%; background:var(--danger); color:white; padding:10px; z-index:900; text-align:center; font-weight:bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3); box-sizing: border-box; border-bottom: 2px solid #b02a37;">
+    ⚠️ Aap BUSY hain: <span id="timerDisplay">00:00:00</span> 
+    <button onclick="setFree()" style="background:white; color:var(--danger); padding:6px 12px; margin-left:10px; font-size:12px; border-radius:4px; font-weight:bold; border:none; cursor:pointer;">FREE NOW</button>
+</div>
+
 <div class="overlay" id="overlay" onclick="closeMenus()"></div>
 
 <div class="side-menu left-menu" id="leftMenu">
@@ -206,8 +211,8 @@
     function saveProfile() { let data = { name: document.getElementById('wName').value, phone: document.getElementById('wPhone').value, loc: document.getElementById('wLoc').value, cat: document.getElementById('wCat').value, photo: base64Photo, calls: 0, busyUntil: 0 }; if(!data.name || !data.phone) return alert("Naam aur Mobile required hai!"); if(myWorkerId) { db.ref('workers/'+myWorkerId).update(data).then(()=>{ alert("Updated!"); closeMenus(); }); } else { let ref = db.ref('workers').push(); ref.set(data).then(()=>{ localStorage.setItem('my_worker_id', ref.key); alert("Profile Created!"); location.reload(); }); } }
     function loadMyProfile() { db.ref('workers/'+myWorkerId).once('value', snap => { let d = snap.val(); if(!d) return; document.getElementById('wName').value = d.name; document.getElementById('wPhone').value = d.phone; document.getElementById('wLoc').value = d.loc; document.getElementById('wCat').value = d.cat; if(d.photo) { document.getElementById('previewImg').src = d.photo; document.getElementById('previewImg').style.display = 'block'; document.getElementById('photoText').style.display='none'; base64Photo = d.photo; } }); }
 
-    function setBusy() { let hrs = parseFloat(document.getElementById('busyHours').value); let until = hrs === 999 ? 9999999999999 : Date.now() + (hrs * 3600000); db.ref('workers/'+myWorkerId).update({busyUntil: until, calls: 0}).then(()=>{ alert("Status: BUSY"); closeMenus(); }); }
-    function setFree() { db.ref('workers/'+myWorkerId).update({busyUntil: 0, calls: 0}).then(()=>{ alert("Status: FREE"); closeMenus(); }); }
+    function setBusy() { let hrs = parseFloat(document.getElementById('busyHours').value); let until = hrs === 999 ? 9999999999999 : Date.now() + (hrs * 3600000); db.ref('workers/'+myWorkerId).update({busyUntil: until, calls: 0}).then(()=>{ closeMenus(); }); }
+    function setFree() { db.ref('workers/'+myWorkerId).update({busyUntil: 0, calls: 0}).then(()=>{ document.getElementById('busyNotification').style.display = 'none'; closeMenus(); }); }
     function makeCall(id, currentCalls) { let newCount = (currentCalls || 0) + 1; let update = { calls: newCount }; if(newCount >= 3) { update.busyUntil = Date.now() + (24 * 3600000); update.calls = 0; alert("Is number par bahut call gaye hain. Ye 24 ghante ke liye busy set ho gaya hai."); } db.ref('workers/'+id).update(update); window.location.href = `tel:${event.target.dataset.phone}`; }
 
     function deleteWorkerData(id) { if(confirm("Kya aap sach mein delete karna chahte hain?")) { db.ref('workers/'+id).remove().then(() => alert("Worker Delete Ho Gaya!")); } }
@@ -239,6 +244,36 @@
     function sendChatPhoto(input) { if(input.files && input.files[0]) { let r = new FileReader(); r.onload = function(e) { postChatMsg("", e.target.result); }; r.readAsDataURL(input.files[0]); } }
     function sendChatMsg() { let txt = document.getElementById('chatMsg').value; if(txt) { postChatMsg(txt, ""); document.getElementById('chatMsg').value = ""; } }
     function postChatMsg(txt, imgStr) { let n = myWorkerId ? (document.getElementById('wName').value || "Worker") : "Guest"; db.ref('chat').push({ senderId: myWorkerId || 'guest', name: n, text: txt, img: imgStr, time: Date.now() }); }
+
+    // --- NAYA FEATURE: LIVE TIMER & NOTIFICATION LOGIC ---
+    setInterval(() => {
+        if (!myWorkerId) return; // Agar profile nahi banayi toh kuch nahi karega
+
+        db.ref('workers/' + myWorkerId).once('value', snap => {
+            let d = snap.val();
+            let notifyBox = document.getElementById('busyNotification');
+            let timerDisp = document.getElementById('timerDisplay');
+
+            if (d && d.busyUntil > Date.now()) {
+                notifyBox.style.display = 'block'; // Patti dikhao
+                
+                let diff = d.busyUntil - Date.now();
+                if(d.busyUntil > 9000000000000) { 
+                    timerDisp.innerText = "CHUTTI (Holiday)";
+                } else {
+                    let h = Math.floor(diff / 3600000);
+                    let m = Math.floor((diff % 3600000) / 60000);
+                    let s = Math.floor((diff % 60000) / 1000);
+                    
+                    // Format the time directly (eg: 2h 15m 30s)
+                    timerDisp.innerText = `${h}h ${m}m ${s}s`;
+                }
+            } else {
+                notifyBox.style.display = 'none'; // Patti chhupao
+            }
+        });
+    }, 1000); // Har 1 second baad check karega
+
 </script>
 </body>
 </html>
