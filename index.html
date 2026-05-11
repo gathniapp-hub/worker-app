@@ -75,9 +75,11 @@
     <button onclick="toggleMenu('right')" style="background:none; color:white; font-size:22px;">👤</button>
 </div>
 
-<div id="busyNotification" style="display:none; position:fixed; top:48px; left:0; width:100%; background:var(--danger); color:white; padding:10px; z-index:900; text-align:center; font-weight:bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3); box-sizing: border-box; border-bottom: 2px solid #b02a37;">
-    ⚠️ Aap BUSY hain: <span id="timerDisplay">00:00:00</span> 
-    <button onclick="setFree()" style="background:white; color:var(--danger); padding:6px 12px; margin-left:10px; font-size:12px; border-radius:4px; font-weight:bold; border:none; cursor:pointer;">FREE NOW</button>
+<div id="busyNotification" style="display:none; position:fixed; top:50px; left:0; width:100%; background:var(--danger); color:white; padding:12px 10px; z-index:1050; text-align:center; font-weight:bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3); box-sizing: border-box; border-bottom: 2px solid #b02a37;">
+    ⚠️ BUSY: <span id="timerDisplay">00:00:00</span> 
+    <button onclick="setFree()" style="background:white; color:var(--danger); padding:6px 12px; margin-left:10px; font-size:12px; border-radius:4px; font-weight:bold; border:none; cursor:pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">FREE NOW</button>
+</div>
+
 </div>
 
 <div class="overlay" id="overlay" onclick="closeMenus()"></div>
