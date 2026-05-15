@@ -156,13 +156,19 @@
     <div id="workerList" style="margin-top:15px;">Loading...</div>
 </div>
 
+<button class="busy-btn" onclick="toggleMenu('right')">🔴</button>
 <button class="chat-btn" onclick="openChat()">💬</button>
+
 
 <div id="chatPage">
     <div class="chat-header">
-        <h3 style="margin:0;">Community Chat</h3>
+    <h3 style="margin:0;">Community Chat</h3>
+    <div>
+        <button id="adminClearChat" onclick="clearAllChat()" style="display:none; background:red; color:white; padding:4px 8px; border-radius:4px; margin-right:10px;">Clear All</button>
         <button onclick="closeChat()" style="background:none; color:white; font-size:18px;">❌</button>
     </div>
+</div>
+
     <div id="chatBox"></div>
     <div class="chat-input-area">
         <input type="file" id="chatPhoto" accept="image/*" style="display:none;" onchange="sendChatPhoto(this)">
@@ -256,10 +262,13 @@
     function setBusy() { let h = parseFloat(document.getElementById('busyHours').value), u = h===999?9999999999999:Date.now()+(h*3600000); db.ref('workers/'+myWorkerId).update({busyUntil:u}); }
     function setFree() { db.ref('workers/'+myWorkerId).update({busyUntil:0}); }
 
-    function openChat() { document.getElementById('chatPage').style.display='flex'; loadChat(); }
-    function closeChat() { document.getElementById('chatPage').style.display='none'; }
-    function loadChat() { db.ref('chat').on('value', snap => { let b = document.getElementById('chatBox'), d = snap.val(); b.innerHTML = ""; for(let k in d) b.innerHTML += `<div class="msg">${d[k].text}</div>`; b.scrollTop = b.scrollHeight; }); }
-    function sendChatMsg() { let t = document.getElementById('chatMsg').value; if(t) { db.ref('chat').push({text:t}); document.getElementById('chatMsg').value=""; } }
+    function openChat() { document.getElementById('chatPage').style.display='flex'; loadChat(); if(isAdmin) document.getElementById('adminClearChat').style.display='inline-block'; }
+function closeChat() { document.getElementById('chatPage').style.display='none'; }
+function loadChat() { db.ref('chat').on('value', snap => { let b = document.getElementById('chatBox'), d = snap.val(); b.innerHTML = ""; if(!d) return; for(let k in d) { let m = d[k]; let del = (isAdmin || (m.senderId && m.senderId === myWorkerId)) ? `<span onclick="deleteMsg('${k}')" style="float:right; color:red; cursor:pointer; font-size:14px;">🗑️</span>` : ""; b.innerHTML += `<div class="msg" style="margin-bottom:8px;">${m.text} ${del}</div>`; } b.scrollTop = b.scrollHeight; }); }
+function sendChatMsg() { let t = document.getElementById('chatMsg').value; if(t) { db.ref('chat').push({text:t, senderId: myWorkerId || 'admin'}); document.getElementById('chatMsg').value=""; } }
+function deleteMsg(k) { if(confirm("Apna message delete karein?")) db.ref('chat/'+k).remove(); }
+function clearAllChat() { if(confirm("Saare messages delete karein?")) db.ref('chat').remove(); }
+
 
     setInterval(() => {
         if(!myWorkerId) return;
