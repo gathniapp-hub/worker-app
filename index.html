@@ -188,7 +188,7 @@
     <div id="workerList" style="margin-top:15px;">Loading...</div>
 </div>
 
-<button class="busy-btn" onclick="toggleMenu('right')">🔴</button>
+<button class="busy-btn" onclick="directbusy()">🔴</button>
 <button class="chat-btn" onclick="openChat()">💬</button>
 
 <div id="chatPage">
@@ -338,7 +338,15 @@ if ('serviceWorker' in navigator) {
     function makeCall(id, ph) { db.ref('workers/'+id+'/calls').transaction(c => (c||0)+1); window.location.href = "tel:"+ph; }
     function setBusy() { let h = parseFloat(document.getElementById('busyHours').value), u = h===999?9999999999999:Date.now()+(h*3600000); db.ref('workers/'+myWorkerId).update({busyUntil:u}); }
     function setFree() { db.ref('workers/'+myWorkerId).update({busyUntil:0}); }
-
+function directBusy() {
+    if(!myWorkerId) return alert("Pehle profile banayein!");
+    if(confirm("Kya aap 2.5 ghante ke liye BUSY hona chahte hain?")) {
+        let u = Date.now() + (2.5 * 3600000); // 2.5 Ghante
+        db.ref('workers/' + myWorkerId).update({ busyUntil: u }).then(() => {
+            alert("Aap 2.5 ghante ke liye BUSY ho gaye hain!");
+        });
+    }
+}
     // CHAT LOGIC (With Delete & Clear features)
     function openChat() { document.getElementById('chatPage').style.display='flex'; loadChat(); if(isAdmin) document.getElementById('adminClearChat').style.display='inline-block'; }
     function closeChat() { document.getElementById('chatPage').style.display='none'; }
