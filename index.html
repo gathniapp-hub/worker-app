@@ -14,96 +14,177 @@
     <title>Worker App - Malegaon</title>
     
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <link rel="manifest" href="manifest.json">
-
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
+    <link rel="manifest" href="manifest.json">
 
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
 
     <style>
-        :root { --primary: #0d6efd; --success: #198754; --warning: #ffc107; --danger: #dc3545; --bg: #f0f2f5; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding-bottom: 80px; overflow-x: hidden; }
+        :root { 
+            --primary: #2563eb; 
+            --primary-light: #eff6ff;
+            --success: #10b981; 
+            --success-light: #ecfdf5;
+            --danger: #ef4444; 
+            --danger-light: #fef2f2;
+            --bg: #f8fafc; 
+            --text-dark: #0f172a;
+            --text-muted: #64748b;
+        }
         
-        #installBanner { background: var(--success); color: white; padding: 12px; font-weight: bold; font-size: 14px; display: none; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 1001; position: relative;}
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            background: var(--bg); 
+            margin: 0; 
+            padding-bottom: 90px; 
+            overflow-x: hidden; 
+            color: var(--text-dark);
+            -webkit-tap-highlight-color: transparent;
+        }
         
-        .header { background: #1e293b; color: white; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; }
-        .header h1 { margin: 0; font-size: 18px; }
-        .container { padding: 12px; max-width: 650px; margin: auto; }
-        .worker-card { background: #fff; border-radius: 12px; padding: 12px; margin-bottom: 12px; display: flex; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 5px solid var(--success); position: relative;}
-        .worker-card.busy { border-left-color: var(--danger); opacity: 0.8; }
-        .profile-img { width: 70px; height: 70px; border-radius: 8px; object-fit: cover; margin-right: 12px; background: #eee; }
-        .worker-info { flex-grow: 1; }
-        .worker-info b { font-size: 16px; color: #1e293b; }
-        .loc-badge { background: #e2e8f0; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; display: inline-block; margin-top:2px;}
+        #installBanner { 
+            background: linear-gradient(135deg, #10b981, #059669); 
+            color: white; 
+            padding: 14px 16px; 
+            font-weight: 600; 
+            font-size: 14px; 
+            display: none; 
+            justify-content: space-between; 
+            align-items: center; 
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2); 
+            z-index: 1001; 
+            position: relative;
+            border-radius: 0 0 12px 12px;
+            margin: 0 8px;
+        }
         
-        .side-menu { position: fixed; top: 0; width: 85%; max-width: 380px; height: 100%; background: white; z-index: 2000; transition: 0.3s; padding: 15px; box-sizing: border-box; overflow-y: auto; box-shadow: 0 0 20px rgba(0,0,0,0.3); }
-        .left-menu { left: -400px; border-right: 4px solid var(--primary); }
-        .right-menu { right: -400px; border-left: 4px solid var(--success); }
-        .open-left { left: 0; }
-        .open-right { right: 0; }
-        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; z-index: 1500; }
-        input, select, textarea { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
-        button { cursor: pointer; border: none; border-radius: 6px; font-weight: bold; padding: 10px; }
-        .admin-btn { background: var(--primary); color: white; width: 100%; margin-bottom: 10px; }
+        .header { 
+            background: #0f172a; 
+            color: white; 
+            padding: 16px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            position: sticky; 
+            top: 0; 
+            z-index: 1000; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header h1 { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: 0.5px; }
         
-        .filter-box select { padding: 8px; border: 2px solid var(--primary); font-weight: bold; font-size: 14px; border-radius: 6px; margin-bottom:8px; width:100%; }
-        .filter-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .container { padding: 16px; max-width: 600px; margin: auto; }
+        
+        /* Premium Worker Card Design */
+        .worker-card { 
+            background: #ffffff; 
+            border-radius: 16px; 
+            padding: 16px; 
+            margin-bottom: 14px; 
+            display: flex; 
+            align-items: center; 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); 
+            border-left: 6px solid var(--success); 
+            position: relative;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .worker-card:active { transform: scale(0.99); }
+        .worker-card.busy { border-left-color: var(--danger); background: #fdfdfd; }
+        
+        .profile-img { width: 68px; height: 68px; border-radius: 12px; object-fit: cover; margin-right: 16px; background: #f1f5f9; border: 1px solid #e2e8f0; }
+        .worker-info { flex-grow: 1; display: flex; flex-direction: column; gap: 4px; }
+        .worker-info b { font-size: 17px; color: var(--text-dark); font-weight: 600; }
+        .worker-info small { font-size: 13px; color: var(--text-muted); font-weight: 500; }
+        
+        /* Modern Badges */
+        .loc-badge { background: #f1f5f9; color: #475569; font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 600; display: inline-block; width: fit-content; }
+        .shift-badge-din { background: #fef9c3; color: #713f12; font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 600; display: inline-block; width: fit-content; }
+        .shift-badge-raat { background: #1e293b; color: #f8fafc; font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 600; display: inline-block; width: fit-content; }
+        
+        /* Action Buttons */
+        .call-action-btn { background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 10px 20px; font-size: 14px; border-radius: 10px; font-weight: 700; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.15); transition: 0.2s; }
+        .call-action-btn:active { transform: scale(0.95); }
+        .busy-status-text { color: var(--danger); font-weight: 700; font-size: 13px; letter-spacing: 0.5px; background: var(--danger-light); padding: 6px 12px; border-radius: 8px; }
+        
+        /* Menus & Filters */
+        .side-menu { position: fixed; top: 0; width: 88%; max-width: 380px; height: 100%; background: white; z-index: 2000; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding: 20px; box-sizing: border-box; overflow-y: auto; box-shadow: 0 0 30px rgba(0,0,0,0.15); }
+        .left-menu { left: 0; transform: translateX(-105%); border-right: 6px solid var(--primary); }
+        .right-menu { right: 0; transform: translateX(105%); border-left: 6px solid var(--success); }
+        .side-menu.open-left { transform: translateX(0); }
+        .side-menu.open-right { transform: translateX(0); }
+        
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); display: none; z-index: 1500; }
+        
+        input, select, textarea { width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 14px; font-weight: 500; box-sizing: border-box; background: #f8fafc; color: var(--text-dark); transition: border-color 0.2s; }
+        input:focus, select:focus { border-color: var(--primary); outline: none; background: #fff; }
+        
+        button { cursor: pointer; border: none; border-radius: 10px; font-weight: 600; padding: 12px; transition: 0.2s; }
+        .admin-btn { background: var(--primary); color: white; width: 100%; margin-bottom: 12px; box-shadow: 0 4px 6px rgba(37, 99, 235, 0.15); }
+        
+        .filter-box select { padding: 12px; border: 2px solid #e2e8f0; font-weight: 600; font-size: 14px; border-radius: 12px; margin-bottom: 10px; width: 100%; background-color: #fff; }
+        .filter-box select:focus { border-color: var(--primary); }
+        .filter-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-        .rate-table { width: 100%; font-size: 10px; border-collapse: collapse; margin-top: 10px; }
-        .rate-table th { background: #f8fafc; padding: 6px 2px; border: 1px solid #e2e8f0; }
-        .rate-table td { padding: 4px 2px; border: 1px solid #e2e8f0; text-align: center; }
-        .rate-in { width: 42px; padding: 4px 2px; border: 1px solid #cbd5e1; text-align: center; border-radius: 4px; font-size: 10px; }
+        /* Tables styling */
+        .rate-table { width: 100%; font-size: 12px; border-collapse: collapse; margin-top: 14px; background: white; border-radius: 8px; overflow: hidden; }
+        .rate-table th { background: #f1f5f9; padding: 10px 6px; border: 1px solid #e2e8f0; color: #475569; font-weight: 700; }
+        .rate-table td { padding: 8px 6px; border: 1px solid #e2e8f0; text-align: center; }
+        .rate-in { width: 48px; padding: 6px 4px; border: 1px solid #cbd5e1; text-align: center; border-radius: 6px; font-size: 11px; margin-bottom: 0; }
         
-        .photo-preview { width: 100%; height: 120px; background: #f1f5f9; border: 2px dashed #cbd5e1; border-radius: 8px; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .photo-preview { width: 100%; height: 130px; background: #f1f5f9; border: 2px dashed #cbd5e1; border-radius: 12px; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; overflow: hidden; color: var(--text-muted); font-size: 14px; font-weight: 500; }
         .photo-preview img { width: 100%; height: 100%; object-fit: cover; }
         
-        .busy-btn { position: fixed; bottom: 20px; right: 90px; background: var(--danger); color: white; width: 60px; height: 60px; border-radius: 50%; font-size: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 900; }
-        .chat-btn { position: fixed; bottom: 20px; right: 20px; background: var(--primary); color: white; width: 60px; height: 60px; border-radius: 50%; font-size: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 900; }
+        /* Floating Action Buttons */
+        .busy-btn { position: fixed; bottom: 24px; right: 96px; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; width: 60px; height: 60px; border-radius: 50%; font-size: 24px; box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4); z-index: 900; display: flex; align-items: center; justify-content: center; }
+        .chat-btn { position: fixed; bottom: 24px; right: 24px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; width: 60px; height: 60px; border-radius: 50%; font-size: 24px; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4); z-index: 900; display: flex; align-items: center; justify-content: center; }
         
+        /* Notification Banner */
+        #busyNotification { display: none; position: fixed; top: 60px; left: 0; width: 100%; background: var(--danger); color: white; padding: 14px; z-index: 1050; text-align: center; font-weight: 700; box-shadow: 0 4px 15px rgba(0,0,0,0.15); box-sizing: border-box; font-size: 15px; }
+        
+        /* Community Chat Box */
         #chatPage { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 3000; display: none; flex-direction: column; }
-        .chat-header { background: #1e293b; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
-        #chatBox { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-        .msg { max-width: 80%; padding: 10px; border-radius: 8px; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .chat-input-area { background: white; padding: 10px; display: flex; gap: 10px; align-items: center; }
+        .chat-header { background: #0f172a; color: white; padding: 16px; display: flex; justify-content: space-between; align-items: center; }
+        #chatBox { flex-grow: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+        .msg { max-width: 80%; padding: 12px 16px; border-radius: 14px; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.04); font-size: 15px; line-height: 1.4; }
+        .chat-input-area { background: white; padding: 14px; display: flex; gap: 10px; align-items: center; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
         
-        .chip-container { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:15px; }
-        .chip { background:#e2e8f0; padding:4px 8px; border-radius:4px; font-size:12px; }
+        .chip-container { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+        .chip { background: #e2e8f0; color: #334155; padding: 6px 10px; border-radius: 6px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 4px; }
     </style>
 </head>
 <body>
 
 <div id="installBanner">
     <span onclick="installApp()" style="flex-grow:1; cursor:pointer;">📲 App Phone Mein Install Karein</span>
-    <button onclick="document.getElementById('installBanner').style.display='none'" style="padding:4px 8px; background:white; color:black;">X</button>
+    <button onclick="document.getElementById('installBanner').style.display='none'" style="padding:4px 8px; background:white; color:black; border-radius: 4px;">X</button>
 </div>
 
 <div class="header">
-    <button onclick="toggleMenu('left')" style="background:none; color:white; font-size:22px;">⚙️</button>
+    <button onclick="toggleMenu('left')" style="background:none; color:white; font-size:22px; padding:0;">⚙️</button>
     <h1>Worker App</h1>
-    <button onclick="toggleMenu('right')" style="background:none; color:white; font-size:22px;">👤</button>
+    <button onclick="toggleMenu('right')" style="background:none; color:white; font-size:22px; padding:0;">👤</button>
 </div>
 
-<div id="busyNotification" style="display:none; position:fixed; top:50px; left:0; width:100%; background:var(--danger); color:white; padding:12px 10px; z-index:1050; text-align:center; font-weight:bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3); box-sizing: border-box;">
-    ⚠️ BUSY: <span id="timerDisplay">00:00:00</span> 
-    <button onclick="setFree()" style="background:white; color:var(--danger); padding:6px 12px; margin-left:10px; font-size:12px; border-radius:4px; font-weight:bold; border:none; cursor:pointer;">FREE NOW</button>
+<div id="busyNotification">
+    ⚠️ Aap BUSY hain: <span id="timerDisplay">00:00:00</span> 
+    <button onclick="setFree()" style="background:white; color:var(--danger); padding:6px 12px; margin-left:12px; font-size:12px; border-radius:6px; font-weight:bold; border:none; cursor:pointer;">FREE NOW</button>
 </div>
 
 <div class="overlay" id="overlay" onclick="closeMenus()"></div>
 
 <div class="side-menu left-menu" id="leftMenu">
-    <h3>⚙️ Admin / Setting</h3>
+    <h3 style="margin-top:0;">⚙️ Admin / Setting</h3>
     <div id="adminLoginArea">
         <input type="password" id="adminPass" placeholder="Admin Password">
         <button onclick="checkAdmin()" class="admin-btn">Login</button>
     </div>
     <div id="adminPanel" style="display:none;">
-        <button onclick="logoutAdmin()" style="background:var(--danger); color:white; width:100%; margin-bottom:10px;">Logout</button>
+        <button onclick="logoutAdmin()" style="background:var(--danger); color:white; width:100%; margin-bottom:14px;">Logout</button>
         
-        <div style="background:#eef2ff; padding:10px; border-radius:8px; margin-bottom:15px; border:1px solid #cbd5e1;">
-            <b style="color:var(--primary);">➕ Add New Worker (As Admin)</b>
-            <input type="text" id="admName" placeholder="Worker ka Naam" style="margin-top:5px;">
+        <div style="background:#f1f5f9; padding:14px; border-radius:12px; margin-bottom:16px; border:1px solid #e2e8f0;">
+            <b style="color:var(--primary); font-size:15px;">➕ Add New Worker</b>
+            <input type="text" id="admName" placeholder="Worker ka Naam" style="margin-top:10px;">
             <input type="number" id="admPhone" placeholder="Mobile Number">
             <select id="admLoc"></select>
             <select id="admCat"></select>
@@ -114,34 +195,34 @@
             <button onclick="adminSaveWorker()" style="background:var(--success); color:white; width:100%;">SAVE TO LIST</button>
         </div>
 
-        <hr>
+        <hr style="border:0; border-top:1px solid #e2e8f0; margin:16px 0;">
         <b>📁 Categories</b>
-        <div style="display:flex; gap:5px; margin-bottom:10px; margin-top:5px;">
+        <div style="display:flex; gap:6px; margin-bottom:12px; margin-top:8px;">
             <input type="text" id="newCat" placeholder="Nayi Category" style="margin-bottom:0;">
-            <button onclick="addCat()" style="background:var(--success); color:white;">Add</button>
+            <button onclick="addCat()" style="background:var(--success); color:white; padding:0 16px;">Add</button>
         </div>
         <div id="catEditor" class="chip-container"></div>
         
-        <hr>
+        <hr style="border:0; border-top:1px solid #e2e8f0; margin:16px 0;">
         <b>📍 Address / Locations</b>
-        <div style="display:flex; gap:5px; margin-bottom:10px; margin-top:5px;">
+        <div style="display:flex; gap:6px; margin-bottom:12px; margin-top:8px;">
             <input type="text" id="newLoc" placeholder="Naya Address" style="margin-bottom:0;">
-            <button onclick="addLoc()" style="background:var(--success); color:white;">Add</button>
+            <button onclick="addLoc()" style="background:var(--success); color:white; padding:0 16px;">Add</button>
         </div>
         <div id="locEditor" class="chip-container"></div>
     </div>
-    <div style="background:#fff; padding:10px; border-radius:8px; margin-top:15px; border:1px solid #ddd;">
-        <h4>📒 Judai Rate Chart (Din)</h4>
+    <div style="background:#fff; padding:12px; border-radius:12px; margin-top:16px; border:1px solid #e2e8f0;">
+        <h4 style="margin-top:0; margin-bottom:10px;">📒 Judai Rate Chart (Din)</h4>
         <table class="rate-table">
             <thead><tr><th>Taag</th><th>Cott</th><th>C-Ang</th><th>PC</th><th>P-Ang</th></tr></thead>
             <tbody id="rateBody"></tbody>
         </table>
-        <button id="saveRateBtn" onclick="saveRates()" class="admin-btn" style="display:none; margin-top:10px;">Save Rates</button>
+        <button id="saveRateBtn" onclick="saveRates()" class="admin-btn" style="display:none; margin-top:12px;">Save Rates</button>
     </div>
 </div>
 
 <div class="side-menu right-menu" id="rightMenu">
-    <h3>📝 My Profile</h3>
+    <h3 style="margin-top:0;">📝 My Profile</h3>
     <div id="workerProfileUI">
         <div class="photo-preview" onclick="document.getElementById('photoInput').click()">
             <span id="photoText">📷 Select Photo (Optional)</span>
@@ -156,19 +237,19 @@
             <option value="Din">☀️ Din (Day Shift)</option>
             <option value="Raat">🌙 Raat (Night Shift)</option>
         </select>
-        <button onclick="saveProfile()" style="background:var(--success); color:white; width:100%; padding:14px; margin-bottom:15px;">SAVE MY PROFILE</button>
+        <button onclick="saveProfile()" style="background:var(--success); color:white; width:100%; padding:14px; font-size:15px; margin-bottom:16px;">SAVE MY PROFILE</button>
     </div>
     
-    <div id="myStatusArea" style="display:none; background:#f8fafc; padding:10px; border-radius:8px; border:1px solid #ddd; margin-top:10px;">
-        <b>🔴 Set Busy Timer:</b>
-        <div style="display:flex; gap:5px; margin-top:5px;">
+    <div id="myStatusArea" style="display:none; background:#f1f5f9; padding:14px; border-radius:12px; border:1px solid #e2e8f0; margin-top:12px;">
+        <b style="font-size:14px;">🔴 Set Busy Timer:</b>
+        <div style="display:flex; gap:6px; margin-top:10px;">
             <select id="busyHours" style="margin-bottom:0;">
                 <option value="2.5">2.5h</option><option value="5">5h</option>
                 <option value="12">12h</option><option value="24">24h</option><option value="999">Holiday</option>
             </select>
-            <button onclick="setBusy()" style="background:var(--danger); color:white;">Set</button>
+            <button onclick="setBusy()" style="background:var(--danger); color:white; padding:0 20px;">Set</button>
         </div>
-        <button onclick="setFree()" style="background:var(--success); color:white; width:100%; margin-top:10px;">🟢 I am FREE Now</button>
+        <button onclick="setFree()" style="background:var(--success); color:white; width:100%; margin-top:12px;">🟢 I am FREE Now</button>
     </div>
 </div>
 
@@ -185,34 +266,34 @@
         </div>
     </div>
     
-    <div id="workerList" style="margin-top:15px;">Loading...</div>
+    <div id="workerList" style="margin-top:10px;">Loading...</div>
 </div>
 
-<button class="busy-btn" onclick="directbusy()">🔴</button>
+<button class="busy-btn" onclick="directBusy()">🔴</button>
 <button class="chat-btn" onclick="openChat()">💬</button>
 
 <div id="chatPage">
     <div class="chat-header">
-        <h3 style="margin:0;">Community Chat</h3>
+        <h3 style="margin:0; font-size:18px;">Community Chat</h3>
         <div>
-            <button id="adminClearChat" onclick="clearAllChat()" style="display:none; background:red; color:white; padding:4px 8px; border-radius:4px; margin-right:10px; border:none; cursor:pointer; font-weight:bold;">Clear All</button>
-            <button onclick="closeChat()" style="background:none; color:white; font-size:18px; border:none;">❌</button>
+            <button id="adminClearChat" onclick="clearAllChat()" style="display:none; background:var(--danger); color:white; padding:6px 12px; border-radius:6px; margin-right:10px; font-weight:bold;">Clear All</button>
+            <button onclick="closeChat()" style="background:none; color:white; font-size:18px;">❌</button>
         </div>
     </div>
     <div id="chatBox"></div>
     <div class="chat-input-area">
         <input type="text" id="chatMsg" placeholder="Message..." style="margin:0;">
-        <button onclick="sendChatMsg()" style="background:var(--primary); color:white;">Send</button>
+        <button onclick="sendChatMsg()" style="background:var(--primary); color:white; padding:0 20px; height:45px;">Send</button>
     </div>
 </div>
 
 <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').then(() => console.log("Service Worker Registered"));
+    }
+
     const firebaseConfig = { apiKey: "AIzaSyAi-eed_fIWaj3GQVleMzD7Fz4ppS_voxQ", databaseURL: "https://gathni-app-default-rtdb.firebaseio.com" };
     firebase.initializeApp(firebaseConfig); const db = firebase.database();
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js')
-    .then(() => console.log("Service Worker Registered"));
-}
 
     let base64Photo = "", myWorkerId = localStorage.getItem('my_worker_id'), isAdmin = localStorage.getItem('admin_auth') === 'true';
 
@@ -233,11 +314,16 @@ if ('serviceWorker' in navigator) {
         document.querySelectorAll('.rate-in').forEach(i => i.disabled = false); 
     }
 
-    function toggleMenu(s) { document.getElementById(s+'Menu').classList.add('open-'+s); document.getElementById('overlay').style.display = 'block'; if(s==='left') loadRates(); if(s==='right' && myWorkerId) { document.getElementById('myStatusArea').style.display = 'block'; } }
+    function toggleMenu(s) { 
+        if(s==='left') document.getElementById('leftMenu').classList.add('open-left'); 
+        if(s==='right') document.getElementById('rightMenu').classList.add('open-right'); 
+        document.getElementById('overlay').style.display = 'block'; 
+        if(s==='left') loadRates(); 
+        if(s==='right' && myWorkerId) { document.getElementById('myStatusArea').style.display = 'block'; } 
+    }
     function closeMenus() { document.getElementById('leftMenu').classList.remove('open-left'); document.getElementById('rightMenu').classList.remove('open-right'); document.getElementById('overlay').style.display = 'none'; }
     function previewPhoto(input) { if (input.files && input.files[0]) { let r = new FileReader(); r.onload = function(e) { document.getElementById('previewImg').src = e.target.result; document.getElementById('previewImg').style.display = 'block'; document.getElementById('photoText').style.display = 'none'; base64Photo = e.target.result; }; r.readAsDataURL(input.files[0]); } }
 
-    // DYNAMIC CATEGORY
     db.ref('categories').on('value', snap => { 
         let cats = snap.val() || { "default": "Gathni / Taag Jodne" }; 
         let opt = "", optF = "<option value='All'>All Categories</option>", ed = ""; 
@@ -254,9 +340,8 @@ if ('serviceWorker' in navigator) {
     });
     function addCat() { let v = document.getElementById('newCat').value; if(v) { db.ref('categories').push(v); document.getElementById('newCat').value=""; } }
 
-    // DYNAMIC LOCATION (ADDRESS) - NEW
     db.ref('locations').on('value', snap => { 
-        let locs = snap.val() || { "default": "All Over Malegaon", "m": "Madni Nagar" }; 
+        let locs = snap.val() || { "default": "All Over Malegaon" }; 
         let opt = "", optF = "<option value='All'>All Areas</option>", ed = ""; 
         for(let id in locs) {
             opt += `<option value="${locs[id]}">${locs[id]}</option>`; 
@@ -272,62 +357,43 @@ if ('serviceWorker' in navigator) {
     function addLoc() { let v = document.getElementById('newLoc').value; if(v) { db.ref('locations').push(v); document.getElementById('newLoc').value=""; } }
 
     function adminSaveWorker() {
-        let name = document.getElementById('admName').value;
-        let phone = document.getElementById('admPhone').value;
-        let loc = document.getElementById('admLoc').value;
-        let cat = document.getElementById('admCat').value;
-        let shift = document.getElementById('admShift').value; // Shift capture
+        let name = document.getElementById('admName').value, phone = document.getElementById('admPhone').value, loc = document.getElementById('admLoc').value, cat = document.getElementById('admCat').value, shift = document.getElementById('admShift').value;
         if(!name || !phone) return alert("Details bhariye!");
-        db.ref('workers').push({ name: name, phone: phone, loc: loc, cat: cat, shift: shift, photo: "", calls: 0, busyUntil: 0 }).then(() => {
-            alert(name + " add ho gaya!");
-            document.getElementById('admName').value = ""; document.getElementById('admPhone').value = "";
-        });
+        db.ref('workers').push({ name: name, phone: phone, loc: loc, cat: cat, shift: shift, photo: "", calls: 0, busyUntil: 0 }).then(() => { alert(name + " add ho gaya!"); document.getElementById('admName').value = ""; document.getElementById('admPhone').value = ""; });
     }
 
     function saveProfile() {
-        let data = { 
-            name: document.getElementById('wName').value, 
-            phone: document.getElementById('wPhone').value, 
-            loc: document.getElementById('wLoc').value, 
-            cat: document.getElementById('wCat').value, 
-            shift: document.getElementById('wShift').value, // Shift capture
-            photo: base64Photo, 
-            calls: 0, 
-            busyUntil: 0 
-        };
+        let data = { name: document.getElementById('wName').value, phone: document.getElementById('wPhone').value, loc: document.getElementById('wLoc').value, cat: document.getElementById('wCat').value, shift: document.getElementById('wShift').value, photo: base64Photo, calls: 0, busyUntil: 0 };
         if(!data.name || !data.phone) return alert("Zaruri hai!");
         if(myWorkerId) { db.ref('workers/'+myWorkerId).update(data).then(()=>alert("Updated!")); } 
         else { let ref = db.ref('workers').push(); ref.set(data).then(()=>{ localStorage.setItem('my_worker_id', ref.key); location.reload(); }); }
     }
 
     function fetchWorkers() { 
-        let fc = document.getElementById('catFilter').value; 
-        let fl = document.getElementById('locFilter').value; 
-        let fs = document.getElementById('shiftFilter').value; 
-        
+        let fc = document.getElementById('catFilter').value, fl = document.getElementById('locFilter').value, fs = document.getElementById('shiftFilter').value; 
         db.ref('workers').on('value', snap => { 
             let list = document.getElementById('workerList'), d = snap.val(); 
             list.innerHTML = ""; if(!d) return; 
             for(let id in d) { 
                 let w = d[id]; 
-                let workerShift = w.shift || "Din"; // Purane logo ke liye default Din
-                
+                let workerShift = w.shift || "Din"; 
                 if((fc==='All' || w.cat===fc) && (fl==='All' || w.loc===fl) && (fs==='All' || workerShift===fs)) {
                     let b = w.busyUntil > Date.now();
-                    let shiftBadge = workerShift === 'Raat' 
-                        ? '<span class="loc-badge" style="background:#1e293b; color:white;">🌙 Raat Shift</span>' 
-                        : '<span class="loc-badge" style="background:#fef08a; color:#1e293b;">☀️ Din Shift</span>';
-
+                    let shiftBadge = workerShift === 'Raat' ? '<span class="shift-badge-raat">🌙 Raat Shift</span>' : '<span class="shift-badge-din">☀️ Din Shift</span>';
+                    
                     list.innerHTML += `<div class="worker-card ${b?'busy':''}">
                         <img src="${w.photo || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'}" class="profile-img">
                         <div class="worker-info">
-                            <b>${w.name}</b><br>
-                            <small>${w.cat}</small><br>
-                            <span class="loc-badge">${w.loc}</span> ${shiftBadge}
+                            <b>${w.name}</b>
+                            <small>${w.cat}</small>
+                            <div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:2px;">
+                                <span class="loc-badge">${w.loc}</span>
+                                ${shiftBadge}
+                            </div>
                         </div>
-                        <div style="display:flex; flex-direction:column; gap:5px;">
-                            ${!b ? `<button onclick="makeCall('${id}','${w.phone}')" style="background:var(--success); color:white; padding:5px;">Call</button>` : '<b style="color:red; font-size:10px;">BUSY</b>'}
-                            ${isAdmin ? `<button onclick="db.ref('workers/${id}').remove()" style="background:var(--danger); color:white; padding:5px; font-size:10px;">Del</button>` : ''}
+                        <div style="display:flex; flex-direction:column; gap:5px; align-items: center;">
+                            ${!b ? `<button class="call-action-btn" onclick="makeCall('${id}','${w.phone}')">Call</button>` : '<span class="busy-status-text">BUSY</span>'}
+                            ${isAdmin ? `<button onclick="db.ref('workers/${id}').remove()" style="background:var(--danger); color:white; padding:4px 8px; font-size:10px; border-radius:6px; margin-top:4px;">Del</button>` : ''}
                         </div>
                     </div>`;
                 }
@@ -335,28 +401,40 @@ if ('serviceWorker' in navigator) {
         }); 
     }
 
-    function makeCall(id, ph) { db.ref('workers/'+id+'/calls').transaction(c => (c||0)+1); window.location.href = "tel:"+ph; }
-    function setBusy() { let h = parseFloat(document.getElementById('busyHours').value), u = h===999?9999999999999:Date.now()+(h*3600000); db.ref('workers/'+myWorkerId).update({busyUntil:u}); }
-    function setFree() { db.ref('workers/'+myWorkerId).update({busyUntil:0}); }
-function directBusy() {
-    if(!myWorkerId) return alert("Pehle profile banayein!");
-    if(confirm("Kya aap 2.5 ghante ke liye BUSY hona chahte hain?")) {
-        let u = Date.now() + (2.5 * 3600000); // 2.5 Ghante
-        db.ref('workers/' + myWorkerId).update({ busyUntil: u }).then(() => {
-            alert("Aap 2.5 ghante ke liye BUSY ho gaye hain!");
+    function makeCall(id, ph) { 
+        db.ref('workers/'+id+'/calls').transaction(c => (c||0)+1, (error, committed, snapshot) => {
+            if (committed) {
+                let currentCalls = snapshot.val();
+                if (currentCalls >= 3) {
+                    let u = Date.now() + (2.5 * 3600000); 
+                    db.ref('workers/'+id).update({ busyUntil: u, calls: 0 }); 
+                }
+            }
         });
+        window.location.href = "tel:"+ph; 
     }
-}
-    // CHAT LOGIC (With Delete & Clear features)
+    
+    function directBusy() {
+        if(!myWorkerId) return alert("Pehle profile banayein!");
+        if(confirm("Kya aap 2.5 ghante ke liye BUSY hona chahte hain?")) {
+            let u = Date.now() + (2.5 * 3600000); 
+            db.ref('workers/' + myWorkerId).update({ busyUntil: u, calls: 0 }).then(() => {
+                alert("Aap 2.5 ghante ke liye BUSY ho gaye hain!");
+            });
+        }
+    }
+
+    function setBusy() { let h = parseFloat(document.getElementById('busyHours').value), u = h===999?9999999999999:Date.now()+(h*3600000); db.ref('workers/'+myWorkerId).update({busyUntil:u, calls:0}); }
+    function setFree() { db.ref('workers/'+myWorkerId).update({busyUntil:0, calls:0}); }
+
     function openChat() { document.getElementById('chatPage').style.display='flex'; loadChat(); if(isAdmin) document.getElementById('adminClearChat').style.display='inline-block'; }
     function closeChat() { document.getElementById('chatPage').style.display='none'; }
     function loadChat() { 
         db.ref('chat').on('value', snap => { 
             let b = document.getElementById('chatBox'), d = snap.val(); b.innerHTML = ""; if(!d) return; 
             for(let k in d) { 
-                let m = d[k]; 
-                let del = (isAdmin || (m.senderId && m.senderId === myWorkerId)) ? `<span onclick="deleteMsg('${k}')" style="float:right; color:red; cursor:pointer; font-size:14px;">🗑️</span>` : ""; 
-                b.innerHTML += `<div class="msg" style="margin-bottom:8px;">${m.text} ${del}</div>`; 
+                let m = d[k]; let del = (isAdmin || (m.senderId && m.senderId === myWorkerId)) ? `<span onclick="deleteMsg('${k}')" style="float:right; color:red; cursor:pointer; font-size:14px; margin-left:10px;">🗑️</span>` : ""; 
+                b.innerHTML += `<div class="msg" style="margin-bottom:8px; align-self: ${m.senderId === myWorkerId ? 'flex-end' : 'flex-start'}; background: ${m.senderId === myWorkerId ? '#dbeafe' : 'white'};">${m.text} ${del}</div>`; 
             } 
             b.scrollTop = b.scrollHeight; 
         }); 
