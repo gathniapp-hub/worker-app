@@ -402,17 +402,20 @@
     }
 
     function makeCall(id, ph) { 
-        db.ref('workers/'+id+'/calls').transaction(c => (c||0)+1, (error, committed, snapshot) => {
-            if (committed) {
-                let currentCalls = snapshot.val();
-                if (currentCalls >= 3) {
-                    let u = Date.now() + (2.5 * 3600000); 
-                    db.ref('workers/'+id).update({ busyUntil: u, calls: 0 }); 
-                }
+    // Google Analytics Event
+    gtag('event', 'worker_call', { 'worker_id': id });
+
+    db.ref('workers/'+id+'/calls').transaction(c => (c||0)+1, (error, committed, snapshot) => {
+        if (committed) {
+            let currentCalls = snapshot.val();
+            if (currentCalls >= 3) {
+                let u = Date.now() + (2.5 * 3600000); 
+                db.ref('workers/'+id).update({ busyUntil: u, calls: 0 }); 
             }
-        });
-        window.location.href = "tel:"+ph; 
-    }
+        }
+    });
+    window.location.href = "tel:"+ph; 
+}
     
     function directBusy() {
         if(!myWorkerId) return alert("Pehle profile banayein!");
@@ -427,7 +430,15 @@
     function setBusy() { let h = parseFloat(document.getElementById('busyHours').value), u = h===999?9999999999999:Date.now()+(h*3600000); db.ref('workers/'+myWorkerId).update({busyUntil:u, calls:0}); }
     function setFree() { db.ref('workers/'+myWorkerId).update({busyUntil:0, calls:0}); }
 
-    function openChat() { document.getElementById('chatPage').style.display='flex'; loadChat(); if(isAdmin) document.getElementById('adminClearChat').style.display='inline-block'; }
+    function openChat() { 
+    document.getElementById('chatPage').style.display='flex'; 
+    loadChat(); 
+    if(isAdmin) document.getElementById('adminClearChat').style.display='inline-block'; 
+    
+    // Google Analytics Event
+    gtag('event', 'screen_view', { 'screen_name': 'Community Chat' });
+    }
+ 
     function closeChat() { document.getElementById('chatPage').style.display='none'; }
     function loadChat() { 
         db.ref('chat').on('value', snap => { 
