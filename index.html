@@ -1,12 +1,17 @@
 <!DOCTYPE html>
 <html lang="hi">
 <head>
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-535114179"></script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-TLFHVV2V7M"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-      gtag('config', 'G-535114179');
+
+      gtag('config', 'G-TLFHVV2V7M', {
+        'send_page_view': true,
+        'transport_type': 'xhr',
+        'debug_mode': true
+      });
     </script>
 
     <meta charset="UTF-8">
@@ -402,20 +407,22 @@
     }
 
     function makeCall(id, ph) { 
-    // Google Analytics Event
-    gtag('event', 'worker_call', { 'worker_id': id });
-
-    db.ref('workers/'+id+'/calls').transaction(c => (c||0)+1, (error, committed, snapshot) => {
-        if (committed) {
-            let currentCalls = snapshot.val();
-            if (currentCalls >= 3) {
-                let u = Date.now() + (2.5 * 3600000); 
-                db.ref('workers/'+id).update({ busyUntil: u, calls: 0 }); 
-            }
+        // Analytics Track
+        if(typeof gtag === 'function') {
+            gtag('event', 'worker_call', { 'worker_id': id });
         }
-    });
-    window.location.href = "tel:"+ph; 
-}
+
+        db.ref('workers/'+id+'/calls').transaction(c => (c||0)+1, (error, committed, snapshot) => {
+            if (committed) {
+                let currentCalls = snapshot.val();
+                if (currentCalls >= 3) {
+                    let u = Date.now() + (2.5 * 3600000); 
+                    db.ref('workers/'+id).update({ busyUntil: u, calls: 0 }); 
+                }
+            }
+        });
+        window.location.href = "tel:"+ph; 
+    }
     
     function directBusy() {
         if(!myWorkerId) return alert("Pehle profile banayein!");
@@ -431,14 +438,15 @@
     function setFree() { db.ref('workers/'+myWorkerId).update({busyUntil:0, calls:0}); }
 
     function openChat() { 
-    document.getElementById('chatPage').style.display='flex'; 
-    loadChat(); 
-    if(isAdmin) document.getElementById('adminClearChat').style.display='inline-block'; 
-    
-    // Google Analytics Event
-    gtag('event', 'screen_view', { 'screen_name': 'Community Chat' });
+        document.getElementById('chatPage').style.display='flex'; 
+        loadChat(); 
+        if(isAdmin) document.getElementById('adminClearChat').style.display='inline-block'; 
+        
+        // Analytics Track
+        if(typeof gtag === 'function') {
+            gtag('event', 'screen_view', { 'screen_name': 'Community Chat' });
+        }
     }
- 
     function closeChat() { document.getElementById('chatPage').style.display='none'; }
     function loadChat() { 
         db.ref('chat').on('value', snap => { 
