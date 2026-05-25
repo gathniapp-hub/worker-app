@@ -364,59 +364,85 @@
     function adminSaveWorker() {
         let name = document.getElementById('admName').value, phone = document.getElementById('admPhone').value, loc = document.getElementById('admLoc').value, cat = document.getElementById('admCat').value, shift = document.getElementById('admShift').value;
         if(!name || !phone) return alert("Details bhariye!");
-        db.ref('workers').push({ name: name, phone: phone, loc: loc, cat: cat, shift: shift, photo: "", calls: 0, busyUntil: 0 }).then(() => { alert(name + " add ho gaya!"); document.getElementById('admName').value = ""; document.getElementById('admPhone').value = ""; });
+        // Naya worker add karte waqt usko list me sabse niche daalne ke liye busyUntil me Date.now() save kar rahe hain
+        db.ref('workers').push({ name: name, phone: phone, loc: loc, cat: cat, shift: shift, photo: "", calls: 0, busyUntil: Date.now() }).then(() => { alert(name + " add ho gaya!"); document.getElementById('admName').value = ""; document.getElementById('admPhone').value = ""; });
     }
 
     function saveProfile() {
-        let data = { name: document.getElementById('wName').value, phone: document.getElementById('wPhone').value, loc: document.getElementById('wLoc').value, cat: document.getElementById('wCat').value, shift: document.getElementById('wShift').value, photo: base64Photo, calls: 0, busyUntil: 0 };
+        // Naya profile banane par bhi bottom of the free list ke liye Date.now()
+        let data = { name: document.getElementById('wName').value, phone: document.getElementById('wPhone').value, loc: document.getElementById('wLoc').value, cat: document.getElementById('wCat').value, shift: document.getElementById('wShift').value, photo: base64Photo, calls: 0 };
         if(!data.name || !data.phone) return alert("Zaruri hai!");
-        if(myWorkerId) { db.ref('workers/'+myWorkerId).update(data).then(()=>alert("Updated!")); } 
-        else { let ref = db.ref('workers').push(); ref.set(data).then(()=>{ localStorage.setItem('my_worker_id', ref.key); location.reload(); }); }
+        
+        if(myWorkerId) { 
+            db.ref('workers/'+myWorkerId).update(data).then(()=>alert("Updated!")); 
+        } else { 
+            data.busyUntil = Date.now();
+            let ref = db.ref('workers').push(); 
+            ref.set(data).then(()=>{ localStorage.setItem('my_worker_id', ref.key); location.reload(); }); 
+        }
     }
 
-    // Yahan badlaav kiya gaya hai: Free workers upar, Busy workers niche
+    // Yahan Asli Jaddu Hua Hai (Sorting/Queue System)
     function fetchWorkers() { 
         let fc = document.getElementById('catFilter').value, fl = document.getElementById('locFilter').value, fs = document.getElementById('shiftFilter').value; 
         db.ref('workers').on('value', snap => { 
             let list = document.getElementById('workerList'), d = snap.val(); 
             list.innerHTML = ""; if(!d) return; 
             
-            let freeWorkersHTML = "";
-            let busyWorkersHTML = "";
+            let freeWorkers = [];
+            let busyWorkers = [];
             
             for(let id in d) { 
                 let w = d[id]; 
+                w.id = id; // ID save kar li design ke liye
                 let workerShift = w.shift || "Din"; 
+                
+                // Pehle Filter Check Karo
                 if((fc==='All' || w.cat===fc) && (fl==='All' || w.loc===fl) && (fs==='All' || workerShift===fs)) {
-                    let b = w.busyUntil > Date.now();
-                    let shiftBadge = workerShift === 'Raat' ? '<span class="shift-badge-raat">🌙 Raat Shift</span>' : '<span class="shift-badge-din">☀️ Din Shift</span>';
-                    
-                    let workerCard = `<div class="worker-card ${b?'busy':''}">
-                        <img src="${w.photo || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'}" class="profile-img">
-                        <div class="worker-info">
-                            <b>${w.name}</b>
-                            <small>${w.cat}</small>
-                            <div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:2px;">
-                                <span class="loc-badge">${w.loc}</span>
-                                ${shiftBadge}
-                            </div>
-                        </div>
-                        <div style="display:flex; flex-direction:column; gap:5px; align-items: center;">
-                            ${!b ? `<button class="call-action-btn" onclick="makeCall('${id}','${w.phone}')">Call</button>` : '<span class="busy-status-text">BUSY</span>'}
-                            ${isAdmin ? `<button onclick="db.ref('workers/${id}').remove()" style="background:var(--danger); color:white; padding:4px 8px; font-size:10px; border-radius:6px; margin-top:4px;">Del</button>` : ''}
-                        </div>
-                    </div>`;
-                    
-                    if(b) {
-                        busyWorkersHTML += workerCard; // Busy wale alag collect ho rahe hain
+                    if (w.busyUntil > Date.now()) {
+                        busyWorkers.push(w); // Jo busy hain unhe alag rakha
                     } else {
-                        freeWorkersHTML += workerCard; // Free wale alag
+                        freeWorkers.push(w); // Jo free hain unhe alag rakha
                     }
                 }
             }
             
-            // Ab pehle Free workers dikhenge, fir aakhir mein Busy workers
-            list.innerHTML = freeWorkersHTML + busyWorkersHTML;
+            // SORTING: Jo sabse zyada time pehle free tha, wo upar rahega
+            // Jo abhi-abhi naya free hua hai, wo array ke last me jayega
+            freeWorkers.sort((a, b) => (a.busyUntil || 0) - (b.busyUntil || 0));
+            
+            // Busy waalon ko bhi sort kar diya taaki jo sabse pehle free hone wala hai wo upar rahe
+            busyWorkers.sort((a, b) => (a.busyUntil || 0) - (b.busyUntil || 0));
+
+            let htmlString = "";
+
+            // Design Banane wala function
+            function createCardDesign(w, isBusy) {
+                let shiftBadge = w.shift === 'Raat' ? '<span class="shift-badge-raat">🌙 Raat Shift</span>' : '<span class="shift-badge-din">☀️ Din Shift</span>';
+                return `<div class="worker-card ${isBusy?'busy':''}">
+                    <img src="${w.photo || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'}" class="profile-img">
+                    <div class="worker-info">
+                        <b>${w.name}</b>
+                        <small>${w.cat}</small>
+                        <div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:2px;">
+                            <span class="loc-badge">${w.loc}</span>
+                            ${shiftBadge}
+                        </div>
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:5px; align-items: center;">
+                        ${!isBusy ? `<button class="call-action-btn" onclick="makeCall('${w.id}','${w.phone}')">Call</button>` : '<span class="busy-status-text">BUSY</span>'}
+                        ${isAdmin ? `<button onclick="db.ref('workers/${w.id}').remove()" style="background:var(--danger); color:white; padding:4px 8px; font-size:10px; border-radius:6px; margin-top:4px;">Del</button>` : ''}
+                    </div>
+                </div>`;
+            }
+
+            // Pehle saare free workers (Queue ke hisaab se) list me chipkaye
+            freeWorkers.forEach(w => { htmlString += createCardDesign(w, false); });
+            // Phir uske baad busy workers
+            busyWorkers.forEach(w => { htmlString += createCardDesign(w, true); });
+
+            // Final list website me laga di
+            list.innerHTML = htmlString;
         }); 
     }
 
@@ -448,7 +474,9 @@
     }
 
     function setBusy() { let h = parseFloat(document.getElementById('busyHours').value), u = h===999?9999999999999:Date.now()+(h*3600000); db.ref('workers/'+myWorkerId).update({busyUntil:u, calls:0}); }
-    function setFree() { db.ref('workers/'+myWorkerId).update({busyUntil:0, calls:0}); }
+    
+    // YAHAN BADLAAV KIYA HAI: '0' ki jagah Date.now() de rahe hain taaki naya free hone wala line me sabse piche jaye
+    function setFree() { db.ref('workers/'+myWorkerId).update({busyUntil: Date.now(), calls:0}); }
 
     function openChat() { 
         document.getElementById('chatPage').style.display='flex'; 
