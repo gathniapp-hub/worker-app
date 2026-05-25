@@ -374,11 +374,16 @@
         else { let ref = db.ref('workers').push(); ref.set(data).then(()=>{ localStorage.setItem('my_worker_id', ref.key); location.reload(); }); }
     }
 
+    // Yahan badlaav kiya gaya hai: Free workers upar, Busy workers niche
     function fetchWorkers() { 
         let fc = document.getElementById('catFilter').value, fl = document.getElementById('locFilter').value, fs = document.getElementById('shiftFilter').value; 
         db.ref('workers').on('value', snap => { 
             let list = document.getElementById('workerList'), d = snap.val(); 
             list.innerHTML = ""; if(!d) return; 
+            
+            let freeWorkersHTML = "";
+            let busyWorkersHTML = "";
+            
             for(let id in d) { 
                 let w = d[id]; 
                 let workerShift = w.shift || "Din"; 
@@ -386,7 +391,7 @@
                     let b = w.busyUntil > Date.now();
                     let shiftBadge = workerShift === 'Raat' ? '<span class="shift-badge-raat">🌙 Raat Shift</span>' : '<span class="shift-badge-din">☀️ Din Shift</span>';
                     
-                    list.innerHTML += `<div class="worker-card ${b?'busy':''}">
+                    let workerCard = `<div class="worker-card ${b?'busy':''}">
                         <img src="${w.photo || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'}" class="profile-img">
                         <div class="worker-info">
                             <b>${w.name}</b>
@@ -401,13 +406,21 @@
                             ${isAdmin ? `<button onclick="db.ref('workers/${id}').remove()" style="background:var(--danger); color:white; padding:4px 8px; font-size:10px; border-radius:6px; margin-top:4px;">Del</button>` : ''}
                         </div>
                     </div>`;
+                    
+                    if(b) {
+                        busyWorkersHTML += workerCard; // Busy wale alag collect ho rahe hain
+                    } else {
+                        freeWorkersHTML += workerCard; // Free wale alag
+                    }
                 }
             }
+            
+            // Ab pehle Free workers dikhenge, fir aakhir mein Busy workers
+            list.innerHTML = freeWorkersHTML + busyWorkersHTML;
         }); 
     }
 
     function makeCall(id, ph) { 
-        // Analytics Track
         if(typeof gtag === 'function') {
             gtag('event', 'worker_call', { 'worker_id': id });
         }
@@ -442,7 +455,6 @@
         loadChat(); 
         if(isAdmin) document.getElementById('adminClearChat').style.display='inline-block'; 
         
-        // Analytics Track
         if(typeof gtag === 'function') {
             gtag('event', 'screen_view', { 'screen_name': 'Community Chat' });
         }
