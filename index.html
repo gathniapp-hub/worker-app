@@ -187,6 +187,10 @@
     <div id="adminPanel" style="display:none;">
         <button onclick="logoutAdmin()" style="background:var(--danger); color:white; width:100%; margin-bottom:14px;">Logout</button>
         
+        <div style="background:#e0f2fe; padding:12px; border-radius:10px; margin-bottom:14px; text-align:center; border: 1px solid #bae6fd;">
+            <b style="font-size:15px; color:#0369a1;">👥 Total Profiles: <span id="totalWorkerCount" style="font-size:18px;">0</span></b>
+        </div>
+        
         <div style="background:#f1f5f9; padding:14px; border-radius:12px; margin-bottom:16px; border:1px solid #e2e8f0;">
             <b style="color:var(--primary); font-size:15px;">➕ Add New Worker</b>
             <input type="text" id="admName" placeholder="Worker ka Naam" style="margin-top:10px;">
@@ -364,12 +368,10 @@
     function adminSaveWorker() {
         let name = document.getElementById('admName').value, phone = document.getElementById('admPhone').value, loc = document.getElementById('admLoc').value, cat = document.getElementById('admCat').value, shift = document.getElementById('admShift').value;
         if(!name || !phone) return alert("Details bhariye!");
-        // Naya worker add karte waqt usko list me sabse niche daalne ke liye busyUntil me Date.now() save kar rahe hain
         db.ref('workers').push({ name: name, phone: phone, loc: loc, cat: cat, shift: shift, photo: "", calls: 0, busyUntil: Date.now() }).then(() => { alert(name + " add ho gaya!"); document.getElementById('admName').value = ""; document.getElementById('admPhone').value = ""; });
     }
 
     function saveProfile() {
-        // Naya profile banane par bhi bottom of the free list ke liye Date.now()
         let data = { name: document.getElementById('wName').value, phone: document.getElementById('wPhone').value, loc: document.getElementById('wLoc').value, cat: document.getElementById('wCat').value, shift: document.getElementById('wShift').value, photo: base64Photo, calls: 0 };
         if(!data.name || !data.phone) return alert("Zaruri hai!");
         
@@ -382,11 +384,16 @@
         }
     }
 
-    // Yahan Asli Jaddu Hua Hai (Sorting/Queue System)
     function fetchWorkers() { 
         let fc = document.getElementById('catFilter').value, fl = document.getElementById('locFilter').value, fs = document.getElementById('shiftFilter').value; 
         db.ref('workers').on('value', snap => { 
             let list = document.getElementById('workerList'), d = snap.val(); 
+            
+            // ADMIN KE LIYE TOTAL COUNT UPDATE KARIYE
+            if(isAdmin && document.getElementById('totalWorkerCount')) {
+                document.getElementById('totalWorkerCount').innerText = d ? Object.keys(d).length : 0;
+            }
+
             list.innerHTML = ""; if(!d) return; 
             
             let freeWorkers = [];
@@ -394,29 +401,23 @@
             
             for(let id in d) { 
                 let w = d[id]; 
-                w.id = id; // ID save kar li design ke liye
+                w.id = id; 
                 let workerShift = w.shift || "Din"; 
                 
-                // Pehle Filter Check Karo
                 if((fc==='All' || w.cat===fc) && (fl==='All' || w.loc===fl) && (fs==='All' || workerShift===fs)) {
                     if (w.busyUntil > Date.now()) {
-                        busyWorkers.push(w); // Jo busy hain unhe alag rakha
+                        busyWorkers.push(w); 
                     } else {
-                        freeWorkers.push(w); // Jo free hain unhe alag rakha
+                        freeWorkers.push(w); 
                     }
                 }
             }
             
-            // SORTING: Jo sabse zyada time pehle free tha, wo upar rahega
-            // Jo abhi-abhi naya free hua hai, wo array ke last me jayega
             freeWorkers.sort((a, b) => (a.busyUntil || 0) - (b.busyUntil || 0));
-            
-            // Busy waalon ko bhi sort kar diya taaki jo sabse pehle free hone wala hai wo upar rahe
             busyWorkers.sort((a, b) => (a.busyUntil || 0) - (b.busyUntil || 0));
 
             let htmlString = "";
 
-            // Design Banane wala function
             function createCardDesign(w, isBusy) {
                 let shiftBadge = w.shift === 'Raat' ? '<span class="shift-badge-raat">🌙 Raat Shift</span>' : '<span class="shift-badge-din">☀️ Din Shift</span>';
                 return `<div class="worker-card ${isBusy?'busy':''}">
@@ -436,12 +437,9 @@
                 </div>`;
             }
 
-            // Pehle saare free workers (Queue ke hisaab se) list me chipkaye
             freeWorkers.forEach(w => { htmlString += createCardDesign(w, false); });
-            // Phir uske baad busy workers
             busyWorkers.forEach(w => { htmlString += createCardDesign(w, true); });
 
-            // Final list website me laga di
             list.innerHTML = htmlString;
         }); 
     }
@@ -474,8 +472,6 @@
     }
 
     function setBusy() { let h = parseFloat(document.getElementById('busyHours').value), u = h===999?9999999999999:Date.now()+(h*3600000); db.ref('workers/'+myWorkerId).update({busyUntil:u, calls:0}); }
-    
-    // YAHAN BADLAAV KIYA HAI: '0' ki jagah Date.now() de rahe hain taaki naya free hone wala line me sabse piche jaye
     function setFree() { db.ref('workers/'+myWorkerId).update({busyUntil: Date.now(), calls:0}); }
 
     function openChat() { 
