@@ -9,6 +9,9 @@
       gtag('config', 'G-TLFHVV2V7M', { 'send_page_view': true, 'transport_type': 'xhr', 'debug_mode': true });
     </script>
 
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1744546374560361"
+     crossorigin="anonymous"></script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Worker App - Malegaon</title>
@@ -40,9 +43,12 @@
         .loc-badge { background: #f1f5f9; color: #475569; font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 600; display: inline-block; width: fit-content; }
         .shift-badge-din { background: #fef9c3; color: #713f12; font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 600; display: inline-block; width: fit-content; }
         .shift-badge-raat { background: #1e293b; color: #f8fafc; font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 600; display: inline-block; width: fit-content; }
+        .rate-badge { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 700; display: inline-block; width: fit-content; }
         
-        .call-action-btn { background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 10px 20px; font-size: 14px; border-radius: 10px; font-weight: 700; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.15); transition: 0.2s; }
+        .call-action-btn { background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 10px 16px; font-size: 14px; border-radius: 10px; font-weight: 700; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.15); transition: 0.2s; border: none; }
         .call-action-btn:active { transform: scale(0.95); }
+        .rate-action-btn { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; padding: 10px 14px; font-size: 14px; border-radius: 10px; font-weight: 700; transition: 0.2s; cursor: pointer; }
+        .rate-action-btn:active { transform: scale(0.95); background: #fef3c7; }
         .busy-status-text { color: var(--danger); font-weight: 700; font-size: 13px; letter-spacing: 0.5px; background: var(--danger-light); padding: 6px 12px; border-radius: 8px; }
         
         .side-menu { position: fixed; top: 0; width: 88%; max-width: 380px; height: 100%; background: white; z-index: 2000; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding: 20px; box-sizing: border-box; overflow-y: auto; box-shadow: 0 0 30px rgba(0,0,0,0.15); }
@@ -51,6 +57,12 @@
         .side-menu.open-left { transform: translateX(0); }
         .side-menu.open-right { transform: translateX(0); }
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); display: none; z-index: 1500; }
+        
+        /* Modal for Rating */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); display: none; z-index: 4000; align-items: center; justify-content: center; }
+        .modal-box { background: white; padding: 24px; border-radius: 16px; width: 85%; max-width: 320px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .star-container { font-size: 38px; margin: 16px 0; user-select: none; }
+        .star-container span { cursor: pointer; color: #cbd5e1; transition: 0.2s; display: inline-block; }
         
         input, select, textarea { width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 14px; font-weight: 500; box-sizing: border-box; background: #f8fafc; color: var(--text-dark); transition: border-color 0.2s; }
         input:focus, select:focus { border-color: var(--primary); outline: none; background: #fff; }
@@ -102,6 +114,26 @@
 </div>
 
 <div class="overlay" id="overlay" onclick="closeMenus()"></div>
+
+<div class="modal-overlay" id="ratingModal">
+    <div class="modal-box">
+        <h3 id="rateWorkerName" style="margin-top:0; color:var(--text-dark);">Worker ko Rate Karein</h3>
+        <p style="font-size:13px; color:var(--text-muted); margin-top:-5px;">Apna experience share karein</p>
+        
+        <div class="star-container" id="starSelector">
+            <span onclick="selectStars(1)">★</span>
+            <span onclick="selectStars(2)">★</span>
+            <span onclick="selectStars(3)">★</span>
+            <span onclick="selectStars(4)">★</span>
+            <span onclick="selectStars(5)">★</span>
+        </div>
+        
+        <div style="display:flex; gap:10px; margin-top:10px;">
+            <button onclick="closeRatingModal()" style="background:#e2e8f0; color:#334155; flex:1;">Cancel</button>
+            <button onclick="submitWorkerRating()" style="background:var(--primary); color:white; flex:1;">Submit</button>
+        </div>
+    </div>
+</div>
 
 <div class="side-menu left-menu" id="leftMenu">
     <h3 style="margin-top:0;">⚙️ Admin / Setting</h3>
@@ -238,27 +270,70 @@
         document.querySelectorAll('.rate-in').forEach(i => i.disabled = false); 
     }
 
-    // NAYA CODE: Yahan se Database me Rates save aur load hote hain 
+    let activeRatingId = "";
+    let selectedStarCount = 5;
+
+    function openRatingModal(id, name) {
+        activeRatingId = id;
+        document.getElementById('rateWorkerName').innerText = name + " ko Rate Karein";
+        selectStars(5); 
+        document.getElementById('ratingModal').style.display = 'flex';
+    }
+
+    function closeRatingModal() {
+        document.getElementById('ratingModal').style.display = 'none';
+        activeRatingId = "";
+    }
+
+    function selectStars(count) {
+        selectedStarCount = count;
+        let stars = document.getElementById('starSelector').children;
+        for(let i=0; i<5; i++) {
+            if(i < count) {
+                stars[i].innerText = "★";
+                stars[i].style.color = "#f59e0b"; 
+            } else {
+                stars[i].innerText = "☆";
+                stars[i].style.color = "#cbd5e1"; 
+            }
+        }
+    }
+
+    function submitWorkerRating() {
+        if(!activeRatingId) return;
+        
+        let ref = db.ref('workers/' + activeRatingId);
+        ref.transaction((worker) => {
+            if (worker) {
+                worker.totalStars = (worker.totalStars || 0) + selectedStarCount;
+                worker.ratingCount = (worker.ratingCount || 0) + 1;
+            }
+            return worker;
+        }, (error, committed) => {
+            if (committed) {
+                alert("Aapki rating save ho gayi! Shukriya.");
+                closeRatingModal();
+            } else {
+                alert("Kuch problem aayi, baad mein try karein.");
+            }
+        });
+    }
+
     function saveRates() {
         let ratesData = {};
         for(let t=2000; t<=3400; t+=100) {
             ratesData[t] = {
-                c: document.getElementById('c'+t).value || "",
-                ca: document.getElementById('ca'+t).value || "",
-                p: document.getElementById('p'+t).value || "",
-                pa: document.getElementById('pa'+t).value || ""
+                c: document.getElementById('c'+t).value || "", ca: document.getElementById('ca'+t).value || "",
+                p: document.getElementById('p'+t).value || "", pa: document.getElementById('pa'+t).value || ""
             };
         }
-        db.ref('rates').set(ratesData).then(() => {
-            alert("✅ Rate Chart Save Ho Gaya!");
-        });
+        db.ref('rates').set(ratesData).then(() => { alert("✅ Rate Chart Save Ho Gaya!"); });
     }
 
     function loadRates() {
         db.ref('rates').once('value', snap => {
             let data = snap.val();
-            if(!data) return; // Agar pehle se kuch save nahi hai toh waise hi rehne do
-            
+            if(!data) return;
             for(let t=2000; t<=3400; t+=100) {
                 if(data[t]) {
                     if(document.getElementById('c'+t)) document.getElementById('c'+t).value = data[t].c || "";
@@ -269,13 +344,12 @@
             }
         });
     }
-    // NAYA CODE KHATAM
 
     function toggleMenu(s) { 
         if(s==='left') document.getElementById('leftMenu').classList.add('open-left'); 
         if(s==='right') document.getElementById('rightMenu').classList.add('open-right'); 
         document.getElementById('overlay').style.display = 'block'; 
-        if(s==='left') loadRates(); // Yahan loadRates chalega!
+        if(s==='left') loadRates(); 
         if(s==='right' && myWorkerId) { document.getElementById('myStatusArea').style.display = 'block'; } 
     }
     function closeMenus() { document.getElementById('leftMenu').classList.remove('open-left'); document.getElementById('rightMenu').classList.remove('open-right'); document.getElementById('overlay').style.display = 'none'; }
@@ -289,11 +363,8 @@
             optF += `<option value="${cats[id]}">${cats[id]}</option>`;
             ed += `<span class="chip">${cats[id]} <b onclick="db.ref('categories/${id}').remove()" style="color:red; cursor:pointer;">❌</b></span>`;
         }
-        document.getElementById('wCat').innerHTML = opt; 
-        document.getElementById('admCat').innerHTML = opt;
-        document.getElementById('catFilter').innerHTML = optF; 
-        if(isAdmin) document.getElementById('catEditor').innerHTML = ed;
-        fetchWorkers(); 
+        document.getElementById('wCat').innerHTML = opt; document.getElementById('admCat').innerHTML = opt; document.getElementById('catFilter').innerHTML = optF; 
+        if(isAdmin) document.getElementById('catEditor').innerHTML = ed; fetchWorkers(); 
     });
     function addCat() { let v = document.getElementById('newCat').value; if(v) { db.ref('categories').push(v); document.getElementById('newCat').value=""; } }
 
@@ -305,18 +376,15 @@
             optF += `<option value="${locs[id]}">${locs[id]}</option>`;
             ed += `<span class="chip">${locs[id]} <b onclick="db.ref('locations/${id}').remove()" style="color:red; cursor:pointer;">❌</b></span>`;
         }
-        document.getElementById('wLoc').innerHTML = opt; 
-        document.getElementById('admLoc').innerHTML = opt;
-        document.getElementById('locFilter').innerHTML = optF; 
-        if(isAdmin) document.getElementById('locEditor').innerHTML = ed;
-        fetchWorkers(); 
+        document.getElementById('wLoc').innerHTML = opt; document.getElementById('admLoc').innerHTML = opt; document.getElementById('locFilter').innerHTML = optF; 
+        if(isAdmin) document.getElementById('locEditor').innerHTML = ed; fetchWorkers(); 
     });
     function addLoc() { let v = document.getElementById('newLoc').value; if(v) { db.ref('locations').push(v); document.getElementById('newLoc').value=""; } }
 
     function adminSaveWorker() {
         let name = document.getElementById('admName').value, phone = document.getElementById('admPhone').value, loc = document.getElementById('admLoc').value, cat = document.getElementById('admCat').value, shift = document.getElementById('admShift').value;
         if(!name || !phone) return alert("Details bhariye!");
-        db.ref('workers').push({ name: name, phone: phone, loc: loc, cat: cat, shift: shift, photo: "", calls: 0, busyUntil: Date.now() }).then(() => { alert(name + " add ho gaya!"); document.getElementById('admName').value = ""; document.getElementById('admPhone').value = ""; });
+        db.ref('workers').push({ name: name, phone: phone, loc: loc, cat: cat, shift: shift, photo: "", calls: 0, busyUntil: Date.now(), totalStars: 0, ratingCount: 0 }).then(() => { alert(name + " add ho gaya!"); document.getElementById('admName').value = ""; document.getElementById('admPhone').value = ""; });
     }
 
     function saveProfile() {
@@ -327,6 +395,7 @@
             db.ref('workers/'+myWorkerId).update(data).then(()=>alert("Updated!")); 
         } else { 
             data.busyUntil = Date.now();
+            data.totalStars = 0; data.ratingCount = 0;
             let ref = db.ref('workers').push(); 
             ref.set(data).then(()=>{ localStorage.setItem('my_worker_id', ref.key); location.reload(); }); 
         }
@@ -352,16 +421,29 @@
 
             let htmlString = "";
             function createCardDesign(w, isBusy) {
-                let shiftBadge = w.shift === 'Raat' ? '<span class="shift-badge-raat">🌙 Raat Shift</span>' : '<span class="shift-badge-din">☀️ Din Shift</span>';
+                let shiftBadge = w.shift === 'Raat' ? '<span class="shift-badge-raat">🌙 Raat</span>' : '<span class="shift-badge-din">☀️ Din</span>';
+                
+                let avgRating = w.ratingCount > 0 ? (w.totalStars / w.ratingCount).toFixed(1) : "New";
+                let ratingDisplay = w.ratingCount > 0 ? `⭐ ${avgRating} (${w.ratingCount})` : `⭐ New`;
+
                 return `<div class="worker-card ${isBusy?'busy':''}">
                     <img src="${w.photo || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'}" class="profile-img">
                     <div class="worker-info">
                         <b>${w.name}</b>
                         <small>${w.cat}</small>
-                        <div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:2px;"><span class="loc-badge">${w.loc}</span>${shiftBadge}</div>
+                        <div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:2px;">
+                            <span class="loc-badge">${w.loc}</span>
+                            ${shiftBadge}
+                            <span class="rate-badge">${ratingDisplay}</span>
+                        </div>
                     </div>
                     <div style="display:flex; flex-direction:column; gap:5px; align-items: center;">
-                        ${!isBusy ? `<button class="call-action-btn" onclick="makeCall('${w.id}','${w.phone}')">Call</button>` : '<span class="busy-status-text">BUSY</span>'}
+                        ${!isBusy ? `
+                            <div style="display:flex; gap: 5px;">
+                                <button class="call-action-btn" onclick="makeCall('${w.id}','${w.phone}')">📞 Call</button>
+                                <button class="rate-action-btn" onclick="openRatingModal('${w.id}', '${w.name}')">⭐</button>
+                            </div>
+                        ` : '<span class="busy-status-text">BUSY</span>'}
                         ${isAdmin ? `<button onclick="db.ref('workers/${w.id}').remove()" style="background:var(--danger); color:white; padding:4px 8px; font-size:10px; border-radius:6px; margin-top:4px;">Del</button>` : ''}
                     </div>
                 </div>`;
