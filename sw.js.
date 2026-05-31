@@ -1,3 +1,0 @@
-self.addEventListener('fetch', function(event) {
-    // Ye khali worker Chrome ko tasalli dene ke liye hai ki app offline chal sakti hai
-});
