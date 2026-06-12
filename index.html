@@ -19,9 +19,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
-    
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
-    
     <link rel="manifest" href="manifest.json">
 
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
@@ -61,7 +59,6 @@
         .side-menu.open-right { transform: translateX(0); }
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); display: none; z-index: 1500; }
         
-        /* Modal for Rating */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); display: none; z-index: 4000; align-items: center; justify-content: center; }
         .modal-box { background: white; padding: 24px; border-radius: 16px; width: 85%; max-width: 320px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
         .star-container { font-size: 38px; margin: 16px 0; user-select: none; }
@@ -230,7 +227,7 @@
     <div id="workerList" style="margin-top:10px;">Loading...</div>
 </div>
 
-<button class="busy-btn" onclick="directBusy()">🔴</button>
+<button id="redBusyBtn" class="busy-btn" onclick="directBusy()" style="display:none;">🔴</button>
 <button class="chat-btn" onclick="openChat()">💬</button>
 
 <div id="chatPage">
@@ -244,6 +241,11 @@
     <div id="chatBox"></div>
     <div class="chat-input-area">
         <button id="createPollBtn" onclick="createPoll()" style="display:none; background:#f59e0b; color:white; padding:0 12px; height:45px; font-size:18px; border-radius:10px; margin-right:5px;">📊</button>
+        
+        <label style="cursor:pointer; font-size:24px; padding:0 5px; margin:0; display:flex; align-items:center;">
+            📷 <input type="file" accept="image/*" style="display:none;" onchange="sendChatPhoto(this)">
+        </label>
+
         <input type="text" id="chatMsg" placeholder="Message..." style="margin:0;">
         <button onclick="sendChatMsg()" style="background:var(--primary); color:white; padding:0 20px; height:45px;">Send</button>
     </div>
@@ -256,6 +258,18 @@
     firebase.initializeApp(firebaseConfig); const db = firebase.database();
 
     let base64Photo = "", myWorkerId = localStorage.getItem('my_worker_id'), isAdmin = localStorage.getItem('admin_auth') === 'true';
+
+    // Show Red Busy Button ONLY if profile exists
+    if(myWorkerId) { 
+        document.getElementById('redBusyBtn').style.display = 'flex'; 
+        
+        // Fetch and save name to local storage if missing
+        if(!localStorage.getItem('my_worker_name')) {
+            db.ref('workers/' + myWorkerId).once('value', snap => {
+                if(snap.val()) localStorage.setItem('my_worker_name', snap.val().name);
+            });
+        }
+    }
 
     let deferredPrompt;
     window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; document.getElementById('installBanner').style.display = 'flex'; });
@@ -307,14 +321,11 @@
 
     function submitWorkerRating() {
         if(!activeRatingId) return;
-        
-        // Check 1 Device 1 Rating for this specific worker
         if(localStorage.getItem('rated_' + activeRatingId)) {
             alert("Aap is worker ko pehle hi rate kar chuke hain! (1 Device = 1 Rating)");
             closeRatingModal();
             return;
         }
-        
         let ref = db.ref('workers/' + activeRatingId);
         ref.transaction((worker) => {
             if (worker) {
@@ -324,7 +335,7 @@
             return worker;
         }, (error, committed) => {
             if (committed) {
-                localStorage.setItem('rated_' + activeRatingId, 'true'); // Save to local storage
+                localStorage.setItem('rated_' + activeRatingId, 'true');
                 alert("Aapki rating save ho gayi! Shukriya.");
                 closeRatingModal();
             } else {
@@ -405,6 +416,8 @@
         let data = { name: document.getElementById('wName').value, phone: document.getElementById('wPhone').value, loc: document.getElementById('wLoc').value, cat: document.getElementById('wCat').value, shift: document.getElementById('wShift').value, photo: base64Photo, calls: 0 };
         if(!data.name || !data.phone) return alert("Zaruri hai!");
         
+        localStorage.setItem('my_worker_name', data.name); // Save name for chat
+        
         if(myWorkerId) { 
             db.ref('workers/'+myWorkerId).update(data).then(()=>alert("Updated!")); 
         } else { 
@@ -436,7 +449,6 @@
             let htmlString = "";
             function createCardDesign(w, isBusy) {
                 let shiftBadge = w.shift === 'Raat' ? '<span class="shift-badge-raat">🌙 Raat</span>' : '<span class="shift-badge-din">☀️ Din</span>';
-                
                 let avgRating = w.ratingCount > 0 ? (w.totalStars / w.ratingCount).toFixed(1) : "New";
                 let ratingDisplay = w.ratingCount > 0 ? `⭐ ${avgRating} (${w.ratingCount})` : `⭐ New`;
 
@@ -470,9 +482,9 @@
 
     function makeCall(id, ph) { 
         if(typeof gtag === 'function') gtag('event', 'worker_call', { 'worker_id': id });
-        db.ref('workers/'+id+'/calls').transaction(c => (c||0)+1, (error, committed, snapshot) => {
-            if (committed && snapshot.val() >= 3) db.ref('workers/'+id).update({ busyUntil: Date.now() + (2.5 * 3600000), calls: 0 }); 
-        });
+        
+        // Update: 1 Call Instantly makes the worker Busy for 2.5 hours
+        db.ref('workers/'+id).update({ busyUntil: Date.now() + (2.5 * 3600000), calls: 0 }); 
         window.location.href = "tel:"+ph; 
     }
     
@@ -493,6 +505,7 @@
             for(let k in d) { 
                 let m = d[k]; let del = (isAdmin || (m.senderId && m.senderId === myWorkerId)) ? `<span onclick="deleteMsg('${k}')" style="float:right; color:red; cursor:pointer; font-size:14px; margin-left:10px;">🗑️</span>` : ""; 
                 if (m.type === 'poll') {
+                    // Poll Code Remains same
                     let total = (m.votesA || 0) + (m.votesB || 0);
                     let pA = total ? Math.round(((m.votesA || 0)/total)*100) : 0;
                     let pB = total ? Math.round(((m.votesB || 0)/total)*100) : 0;
@@ -506,7 +519,23 @@
                         <small style="display:block; text-align:center; margin-top:8px; color:#64748b;">Total Votes: ${total}</small>
                     </div>`;
                 } else {
-                    b.innerHTML += `<div class="msg" style="margin-bottom:8px; align-self: ${m.senderId === myWorkerId ? 'flex-end' : 'flex-start'}; background: ${m.senderId === myWorkerId ? '#dbeafe' : 'white'};">${m.text} ${del}</div>`; 
+                    // Normal Chat Message Design (Green for mine, White for others, With Name and Time)
+                    let isMine = (m.senderId === myWorkerId);
+                    let bgColor = isMine ? '#dcf8c6' : 'white'; // WhatsApp Green for sender
+                    let align = isMine ? 'flex-end' : 'flex-start';
+                    let nameTag = (!isMine && m.senderName) ? `<b style="font-size:12px; color:var(--primary); display:block; margin-bottom:4px;">${m.senderName}</b>` : '';
+                    let timeTag = m.time ? `<span style="font-size:10px; color:#94a3b8; float:right; margin-top:5px; margin-left:10px;">${m.time}</span>` : '';
+                    let photoTag = m.photoUrl ? `<img src="${m.photoUrl}" style="max-width:100%; border-radius:8px; margin-bottom:5px; display:block;"><br>` : '';
+                    let textTag = m.text ? `<span>${m.text}</span>` : '';
+
+                    b.innerHTML += `<div class="msg" style="margin-bottom:8px; align-self: ${align}; background: ${bgColor}; min-width: 120px;">
+                        ${nameTag}
+                        ${photoTag}
+                        ${textTag}
+                        ${del}
+                        ${timeTag}
+                        <div style="clear:both;"></div>
+                    </div>`; 
                 }
             } 
             b.scrollTop = b.scrollHeight; 
@@ -528,7 +557,48 @@
         }, (error, committed) => { if(committed) localStorage.setItem('voted_' + pollId, opt); });
     }
 
-    function sendChatMsg() { let t = document.getElementById('chatMsg').value; if(t) { db.ref('chat').push({text:t, senderId: myWorkerId || 'admin'}); document.getElementById('chatMsg').value=""; } }
+    // New Send Photo Function
+    function sendChatPhoto(input) {
+        if(!myWorkerId && !isAdmin) return alert("Pehle profile banayein tabhi photo bhej sakte hain!");
+        if (input.files && input.files[0]) {
+            let r = new FileReader();
+            r.onload = function(e) {
+                sendChatMsg(e.target.result); 
+            };
+            r.readAsDataURL(input.files[0]);
+        }
+        input.value = ""; 
+    }
+
+    // Updated Send Message Function
+    function sendChatMsg(photoBase64 = null) { 
+        if(!myWorkerId && !isAdmin) return alert("Pehle profile banayein tabhi chat kar sakte hain!");
+        
+        let t = document.getElementById('chatMsg').value; 
+        let senderName = isAdmin ? "Admin" : (localStorage.getItem('my_worker_name') || "Worker");
+        
+        // Get Current Time
+        let d = new Date();
+        let hours = d.getHours();
+        let minutes = d.getMinutes();
+        let ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12;
+        hours = hours ? hours : 12; 
+        minutes = minutes < 10 ? '0'+minutes : minutes;
+        let timestamp = hours + ':' + minutes + ' ' + ampm;
+
+        if(t.trim() !== "" || photoBase64) { 
+            db.ref('chat').push({
+                text: t, 
+                photoUrl: photoBase64 || "",
+                senderId: myWorkerId || 'admin',
+                senderName: senderName,
+                time: timestamp
+            }); 
+            document.getElementById('chatMsg').value=""; 
+        } 
+    }
+    
     function deleteMsg(k) { if(confirm("Apna message delete karein?")) db.ref('chat/'+k).remove(); }
     function clearAllChat() { if(confirm("Saare messages delete karein?")) db.ref('chat').remove(); }
 
