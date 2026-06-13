@@ -81,7 +81,7 @@
         .photo-preview { width: 100%; height: 130px; background: #f1f5f9; border: 2px dashed #cbd5e1; border-radius: 12px; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; overflow: hidden; color: var(--text-muted); font-size: 14px; font-weight: 500; }
         .photo-preview img { width: 100%; height: 100%; object-fit: cover; }
         
-        .busy-btn { position: fixed; bottom: 24px; right: 96px; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; width: 60px; height: 60px; border-radius: 50%; font-size: 24px; box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4); z-index: 900; display: flex; align-items: center; justify-content: center; }
+        .busy-btn { position: fixed; bottom: 24px; right: 96px; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; width: 60px; height: 60px; border-radius: 50%; font-size: 24px; box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4); z-index: 900; display: flex; align-items: center; justify-content: center; transition: 0.3s; }
         .chat-btn { position: fixed; bottom: 24px; right: 24px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; width: 60px; height: 60px; border-radius: 50%; font-size: 24px; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4); z-index: 900; display: flex; align-items: center; justify-content: center; }
         
         #busyNotification { display: none; position: fixed; top: 60px; left: 0; width: 100%; background: var(--danger); color: white; padding: 14px; z-index: 1050; text-align: center; font-weight: 700; box-shadow: 0 4px 15px rgba(0,0,0,0.15); box-sizing: border-box; font-size: 15px; }
@@ -94,7 +94,7 @@
         .chip-container { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
         .chip { background: #e2e8f0; color: #334155; padding: 6px 10px; border-radius: 6px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 4px; }
 
-        /* New CSS for Islamic DOB Feature */
+        /* Islamic DOB Feature */
         #islamicDobPage { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px); z-index: 3500; display: none; align-items: center; justify-content: center; }
         .dob-card { background: white; padding: 24px; border-radius: 16px; width: 85%; max-width: 350px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center; }
     </style>
@@ -260,16 +260,15 @@
 <div id="islamicDobPage">
     <div class="dob-card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <h3 style="margin:0; color:var(--text-dark);">🌙 Islami Tarikh</h3>
+            <h3 style="margin:0; color:var(--text-dark);">🌙 Islami Tarikh & Umar</h3>
             <button onclick="closeIslamicDob()" style="background:none; border:none; font-size:20px; padding:0; color:var(--danger);">❌</button>
         </div>
         <p style="font-size:14px; color:var(--text-muted); margin-top:0; margin-bottom:16px;">Apni Angrezi (English) Date of Birth yahan dalein:</p>
         <input type="date" id="engDobInput" style="margin-bottom:16px; padding:12px; font-size:16px;">
-        <button onclick="calculateHijriDob()" style="background:var(--primary); color:white; width:100%; padding:14px; font-size:15px;">Check Islami Tarikh</button>
+        <button onclick="calculateHijriDob()" style="background:var(--primary); color:white; width:100%; padding:14px; font-size:15px;">Check Result</button>
         
-        <div id="hijriResultBox" style="margin-top:20px; display:none; background:#ecfdf5; border:1px solid #a7f3d0; padding:15px; border-radius:10px;">
-            <span style="font-size:13px; color:#059669; font-weight:600;">✨ Aapki Islami Date of Birth:</span>
-            <h3 id="hijriResultText" style="margin:8px 0 0 0; color:#065f46;"></h3>
+        <div id="hijriResultBox" style="margin-top:20px; display:none; background:#ecfdf5; border:1px solid #a7f3d0; padding:15px; border-radius:10px; text-align:center;">
+            <p id="hijriResultText" style="margin:0; color:#065f46; font-size:15px; line-height:1.6;"></p>
         </div>
     </div>
 </div>
@@ -282,15 +281,20 @@
 
     let base64Photo = "", myWorkerId = localStorage.getItem('my_worker_id'), isAdmin = localStorage.getItem('admin_auth') === 'true';
 
-    // Show Red Busy Button ONLY if profile exists (Islami DOB button is now always visible)
-    if(myWorkerId) { 
-        document.getElementById('redBusyBtn').style.display = 'flex'; 
-        
-        if(!localStorage.getItem('my_worker_name')) {
-            db.ref('workers/' + myWorkerId).once('value', snap => {
-                if(snap.val()) localStorage.setItem('my_worker_name', snap.val().name);
-            });
-        }
+    // FIX: Check if profile still exists in database. If it's deleted, remove the red button and clear localstorage
+    if(myWorkerId) {
+        db.ref('workers/' + myWorkerId).on('value', snap => {
+            if(snap.val()) {
+                document.getElementById('redBusyBtn').style.display = 'flex';
+                if(!localStorage.getItem('my_worker_name')) localStorage.setItem('my_worker_name', snap.val().name);
+            } else {
+                // Agar profile database me nahi hai to laal button hide kar do
+                document.getElementById('redBusyBtn').style.display = 'none';
+                localStorage.removeItem('my_worker_id');
+                localStorage.removeItem('my_worker_name');
+                myWorkerId = null;
+            }
+        });
     }
 
     let deferredPrompt;
@@ -508,9 +512,21 @@
         window.location.href = "tel:"+ph; 
     }
     
+    // FIX: Undefined issue perfectly solved
     function directBusy() {
-        if(!myWorkerId) return alert("Pehle profile banayein!");
-        if(confirm("Kya aap 2.5 ghante ke liye BUSY hona chahte hain?")) db.ref('workers/' + myWorkerId).update({ busyUntil: Date.now() + (2.5 * 3600000), calls: 0 }).then(() => alert("Aap 2.5 ghante ke liye BUSY ho gaye hain!"));
+        if(!myWorkerId) { alert("Pehle apni profile banayein!"); return; }
+        db.ref('workers/' + myWorkerId).once('value', snap => {
+            if(!snap.val()) {
+                alert("Aapki profile delete ho chuki hai, naye sire se banayein!");
+                document.getElementById('redBusyBtn').style.display = 'none';
+                localStorage.removeItem('my_worker_id');
+                myWorkerId = null;
+                return;
+            }
+            if(confirm("Kya aap 2.5 ghante ke liye BUSY hona chahte hain?")) {
+                db.ref('workers/' + myWorkerId).update({ busyUntil: Date.now() + (2.5 * 3600000), calls: 0 }).then(() => alert("Aap 2.5 ghante ke liye BUSY ho gaye hain!"));
+            }
+        });
     }
 
     function setBusy() { let h = parseFloat(document.getElementById('busyHours').value), u = h===999?9999999999999:Date.now()+(h*3600000); db.ref('workers/'+myWorkerId).update({busyUntil:u, calls:0}); }
@@ -617,11 +633,11 @@
     function deleteMsg(k) { if(confirm("Apna message delete karein?")) db.ref('chat/'+k).remove(); }
     function clearAllChat() { if(confirm("Saare messages delete karein?")) db.ref('chat').remove(); }
 
-    // --- New Islamic DOB Functions ---
+    // --- UPDATED: Islamic DOB & Age Functions ---
     function openIslamicDob() { 
-        if(!myWorkerId) return alert("Pehle apni profile banayein!"); // Yeh naya check lagaya gaya hai
+        if(!myWorkerId) return alert("Pehle apni profile banayein!");
         document.getElementById('islamicDobPage').style.display = 'flex'; 
-        closeMenus(); // Close the side menu automatically
+        closeMenus(); 
     }
     
     function closeIslamicDob() { 
@@ -635,11 +651,45 @@
         if(!engDate) return alert("Pehle apni tarikh (Date) select karein!");
         
         let d = new Date(engDate);
-        // Using built-in browser Intl API to convert to Islamic Hijri date
-        let options = { day: 'numeric', month: 'long', year: 'numeric' };
-        let hijriDate = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', options).format(d);
         
-        document.getElementById('hijriResultText').innerText = hijriDate + " AH";
+        let formatter = new Intl.DateTimeFormat('en-US-u-ca-islamic-umalqura', {day: 'numeric', month: 'numeric', year: 'numeric'});
+        let parts = formatter.formatToParts(d);
+        
+        let iDay = "", iMonthNum = 1, iYearStr = "";
+        parts.forEach(p => {
+            if(p.type === 'day') iDay = p.value;
+            if(p.type === 'month') iMonthNum = parseInt(p.value);
+            if(p.type === 'year') iYearStr = p.value.split(" ")[0]; 
+        });
+
+        // Islami Mahino ke naam
+        let islamicMonths = ["", "Muharram", "Safar", "Rabi-ul-Awwal", "Rabi-us-Sani", "Jamadi-ul-Awwal", "Jamadi-us-Sani", "Rajab", "Shaban", "Ramzan", "Shawwal", "Zul-Qadah", "Zul-Hijjah"];
+        let iMonth = islamicMonths[iMonthNum] || iMonthNum;
+        let iYear = parseInt(iYearStr);
+
+        // Aaj ki date ke hisab se umar nikalna
+        let today = new Date();
+        let todayParts = formatter.formatToParts(today);
+        let currYearStr = "", currMonthNum = 1, currDay = 1;
+        
+        todayParts.forEach(p => {
+            if(p.type === 'year') currYearStr = p.value.split(" ")[0];
+            if(p.type === 'month') currMonthNum = parseInt(p.value);
+            if(p.type === 'day') currDay = parseInt(p.value);
+        });
+        
+        let currentIYear = parseInt(currYearStr);
+        let islamiAge = currentIYear - iYear;
+        
+        // Agar is saal abhi paidaish ka mahina nahi aaya hai, to umar ek saal kam hogi
+        if (currMonthNum < iMonthNum || (currMonthNum === iMonthNum && currDay < parseInt(iDay))) {
+            islamiAge--;
+        }
+
+        document.getElementById('hijriResultText').innerHTML = 
+            `Aapki islami tarikh hai <b>${iDay} ${iMonth} ${iYear} Hijri</b>.<br><br>` +
+            `<span style="color:#059669; font-weight:bold;">Masha Allah! Islami saal ke hisab se aap ki umar ${islamiAge} saal hogi.</span>`;
+            
         document.getElementById('hijriResultBox').style.display = 'block';
     }
 
