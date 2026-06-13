@@ -93,6 +93,10 @@
         .chat-input-area { background: white; padding: 14px; display: flex; gap: 10px; align-items: center; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
         .chip-container { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
         .chip { background: #e2e8f0; color: #334155; padding: 6px 10px; border-radius: 6px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 4px; }
+
+        /* New CSS for Islamic DOB Feature */
+        #islamicDobPage { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px); z-index: 3500; display: none; align-items: center; justify-content: center; }
+        .dob-card { background: white; padding: 24px; border-radius: 16px; width: 85%; max-width: 350px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center; }
     </style>
 </head>
 <body>
@@ -212,6 +216,8 @@
         </div>
         <button onclick="setFree()" style="background:var(--success); color:white; width:100%; margin-top:12px;">🟢 I am FREE Now</button>
     </div>
+
+    <button id="islamicDobBtn" onclick="openIslamicDob()" style="display:none; background:linear-gradient(135deg, #10b981, #059669); color:white; width:100%; padding:14px; font-size:15px; font-weight:bold; margin-top:14px; border-radius:12px; border:none; box-shadow:0 4px 10px rgba(16,185,129,0.2);">📅 Islami Date of Birth Calendar</button>
 </div>
 
 <div class="container">
@@ -251,6 +257,23 @@
     </div>
 </div>
 
+<div id="islamicDobPage">
+    <div class="dob-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 style="margin:0; color:var(--text-dark);">🌙 Islami Tarikh</h3>
+            <button onclick="closeIslamicDob()" style="background:none; border:none; font-size:20px; padding:0; color:var(--danger);">❌</button>
+        </div>
+        <p style="font-size:14px; color:var(--text-muted); margin-top:0; margin-bottom:16px;">Apni Angrezi (English) Date of Birth yahan dalein:</p>
+        <input type="date" id="engDobInput" style="margin-bottom:16px; padding:12px; font-size:16px;">
+        <button onclick="calculateHijriDob()" style="background:var(--primary); color:white; width:100%; padding:14px; font-size:15px;">Check Islami Tarikh</button>
+        
+        <div id="hijriResultBox" style="margin-top:20px; display:none; background:#ecfdf5; border:1px solid #a7f3d0; padding:15px; border-radius:10px;">
+            <span style="font-size:13px; color:#059669; font-weight:600;">✨ Aapki Islami Date of Birth:</span>
+            <h3 id="hijriResultText" style="margin:8px 0 0 0; color:#065f46;"></h3>
+        </div>
+    </div>
+</div>
+
 <script>
     if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').then(() => console.log("SW Registered")); }
 
@@ -259,11 +282,11 @@
 
     let base64Photo = "", myWorkerId = localStorage.getItem('my_worker_id'), isAdmin = localStorage.getItem('admin_auth') === 'true';
 
-    // Show Red Busy Button ONLY if profile exists
+    // Show Red Busy Button & Islamic DOB Button ONLY if profile exists
     if(myWorkerId) { 
         document.getElementById('redBusyBtn').style.display = 'flex'; 
+        document.getElementById('islamicDobBtn').style.display = 'block'; 
         
-        // Fetch and save name to local storage if missing
         if(!localStorage.getItem('my_worker_name')) {
             db.ref('workers/' + myWorkerId).once('value', snap => {
                 if(snap.val()) localStorage.setItem('my_worker_name', snap.val().name);
@@ -416,7 +439,7 @@
         let data = { name: document.getElementById('wName').value, phone: document.getElementById('wPhone').value, loc: document.getElementById('wLoc').value, cat: document.getElementById('wCat').value, shift: document.getElementById('wShift').value, photo: base64Photo, calls: 0 };
         if(!data.name || !data.phone) return alert("Zaruri hai!");
         
-        localStorage.setItem('my_worker_name', data.name); // Save name for chat
+        localStorage.setItem('my_worker_name', data.name);
         
         if(myWorkerId) { 
             db.ref('workers/'+myWorkerId).update(data).then(()=>alert("Updated!")); 
@@ -482,8 +505,6 @@
 
     function makeCall(id, ph) { 
         if(typeof gtag === 'function') gtag('event', 'worker_call', { 'worker_id': id });
-        
-        // Update: 1 Call Instantly makes the worker Busy for 2.5 hours
         db.ref('workers/'+id).update({ busyUntil: Date.now() + (2.5 * 3600000), calls: 0 }); 
         window.location.href = "tel:"+ph; 
     }
@@ -505,7 +526,6 @@
             for(let k in d) { 
                 let m = d[k]; let del = (isAdmin || (m.senderId && m.senderId === myWorkerId)) ? `<span onclick="deleteMsg('${k}')" style="float:right; color:red; cursor:pointer; font-size:14px; margin-left:10px;">🗑️</span>` : ""; 
                 if (m.type === 'poll') {
-                    // Poll Code Remains same
                     let total = (m.votesA || 0) + (m.votesB || 0);
                     let pA = total ? Math.round(((m.votesA || 0)/total)*100) : 0;
                     let pB = total ? Math.round(((m.votesB || 0)/total)*100) : 0;
@@ -519,9 +539,8 @@
                         <small style="display:block; text-align:center; margin-top:8px; color:#64748b;">Total Votes: ${total}</small>
                     </div>`;
                 } else {
-                    // Normal Chat Message Design (Green for mine, White for others, With Name and Time)
                     let isMine = (m.senderId === myWorkerId);
-                    let bgColor = isMine ? '#dcf8c6' : 'white'; // WhatsApp Green for sender
+                    let bgColor = isMine ? '#dcf8c6' : 'white'; 
                     let align = isMine ? 'flex-end' : 'flex-start';
                     let nameTag = (!isMine && m.senderName) ? `<b style="font-size:12px; color:var(--primary); display:block; margin-bottom:4px;">${m.senderName}</b>` : '';
                     let timeTag = m.time ? `<span style="font-size:10px; color:#94a3b8; float:right; margin-top:5px; margin-left:10px;">${m.time}</span>` : '';
@@ -557,7 +576,6 @@
         }, (error, committed) => { if(committed) localStorage.setItem('voted_' + pollId, opt); });
     }
 
-    // New Send Photo Function
     function sendChatPhoto(input) {
         if(!myWorkerId && !isAdmin) return alert("Pehle profile banayein tabhi photo bhej sakte hain!");
         if (input.files && input.files[0]) {
@@ -570,14 +588,12 @@
         input.value = ""; 
     }
 
-    // Updated Send Message Function
     function sendChatMsg(photoBase64 = null) { 
         if(!myWorkerId && !isAdmin) return alert("Pehle profile banayein tabhi chat kar sakte hain!");
         
         let t = document.getElementById('chatMsg').value; 
         let senderName = isAdmin ? "Admin" : (localStorage.getItem('my_worker_name') || "Worker");
         
-        // Get Current Time
         let d = new Date();
         let hours = d.getHours();
         let minutes = d.getMinutes();
@@ -601,6 +617,31 @@
     
     function deleteMsg(k) { if(confirm("Apna message delete karein?")) db.ref('chat/'+k).remove(); }
     function clearAllChat() { if(confirm("Saare messages delete karein?")) db.ref('chat').remove(); }
+
+    // --- New Islamic DOB Functions ---
+    function openIslamicDob() { 
+        document.getElementById('islamicDobPage').style.display = 'flex'; 
+        closeMenus(); // Close the side menu automatically
+    }
+    
+    function closeIslamicDob() { 
+        document.getElementById('islamicDobPage').style.display = 'none'; 
+        document.getElementById('hijriResultBox').style.display = 'none'; 
+        document.getElementById('engDobInput').value = ''; 
+    }
+    
+    function calculateHijriDob() {
+        let engDate = document.getElementById('engDobInput').value;
+        if(!engDate) return alert("Pehle apni tarikh (Date) select karein!");
+        
+        let d = new Date(engDate);
+        // Using built-in browser Intl API to convert to Islamic Hijri date
+        let options = { day: 'numeric', month: 'long', year: 'numeric' };
+        let hijriDate = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', options).format(d);
+        
+        document.getElementById('hijriResultText').innerText = hijriDate + " AH";
+        document.getElementById('hijriResultBox').style.display = 'block';
+    }
 
     setInterval(() => {
         if(!myWorkerId) return;
