@@ -217,7 +217,7 @@
         <button onclick="setFree()" style="background:var(--success); color:white; width:100%; margin-top:12px;">🟢 I am FREE Now</button>
     </div>
 
-    <button id="islamicDobBtn" onclick="openIslamicDob()" style="display:none; background:linear-gradient(135deg, #10b981, #059669); color:white; width:100%; padding:14px; font-size:15px; font-weight:bold; margin-top:14px; border-radius:12px; border:none; box-shadow:0 4px 10px rgba(16,185,129,0.2);">📅 Islami Date of Birth Calendar</button>
+    <button id="islamicDobBtn" onclick="openIslamicDob()" style="display:block; background:linear-gradient(135deg, #10b981, #059669); color:white; width:100%; padding:14px; font-size:15px; font-weight:bold; margin-top:14px; border-radius:12px; border:none; box-shadow:0 4px 10px rgba(16,185,129,0.2);">📅 Islami Date of Birth Calendar</button>
 </div>
 
 <div class="container">
@@ -282,10 +282,9 @@
 
     let base64Photo = "", myWorkerId = localStorage.getItem('my_worker_id'), isAdmin = localStorage.getItem('admin_auth') === 'true';
 
-    // Show Red Busy Button & Islamic DOB Button ONLY if profile exists
+    // Show Red Busy Button ONLY if profile exists (Islami DOB button is now always visible)
     if(myWorkerId) { 
         document.getElementById('redBusyBtn').style.display = 'flex'; 
-        document.getElementById('islamicDobBtn').style.display = 'block'; 
         
         if(!localStorage.getItem('my_worker_name')) {
             db.ref('workers/' + myWorkerId).once('value', snap => {
@@ -620,6 +619,7 @@
 
     // --- New Islamic DOB Functions ---
     function openIslamicDob() { 
+        if(!myWorkerId) return alert("Pehle apni profile banayein!"); // Yeh naya check lagaya gaya hai
         document.getElementById('islamicDobPage').style.display = 'flex'; 
         closeMenus(); // Close the side menu automatically
     }
