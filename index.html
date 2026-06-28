@@ -97,6 +97,16 @@
         /* Islamic DOB Feature */
         #islamicDobPage { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px); z-index: 3500; display: none; align-items: center; justify-content: center; }
         .dob-card { background: white; padding: 24px; border-radius: 16px; width: 85%; max-width: 350px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center; }
+
+        /* NEW: Lightweight Client-Side Video Editor Styles */
+        #videoEditorPage { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0f172a; z-index: 3100; display: none; flex-direction: column; color: white; overflow-y: auto; }
+        .editor-container { padding: 16px; display: flex; flex-direction: column; gap: 16px; max-width: 500px; margin: auto; width: 100%; box-sizing: border-box; }
+        .canvas-preview-box { width: 100%; aspect-ratio: 1; background: #000; border-radius: 16px; overflow: hidden; border: 2px solid #334155; display: flex; align-items: center; justify-content: center; position: relative; box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
+        .timeline-box { background: #1e293b; border-radius: 12px; padding: 12px; border: 1px solid #334155; }
+        .timeline-scroll { display: flex; gap: 8px; overflow-x: auto; padding: 6px 0; min-height: 70px; align-items: center; }
+        .timeline-item { width: 60px; height: 60px; border-radius: 8px; object-fit: cover; border: 2px solid var(--success); flex-shrink: 0; position: relative; }
+        .timeline-item .del-img { position: absolute; top: -6px; right: -6px; background: var(--danger); color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; }
+        @keyframes pulseGlow { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); } 70% { transform: scale(1.03); box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); } }
     </style>
 </head>
 <body>
@@ -108,7 +118,10 @@
 
 <div class="header">
     <button onclick="toggleMenu('left')" style="background:none; color:white; font-size:22px; padding:0;">⚙️</button>
-    <h1>Worker App</h1>
+    <div style="display: flex; align-items: center; gap: 8px;">
+        <h1>Worker App</h1>
+        <button onclick="openVideoEditor()" style="background: linear-gradient(135deg, #f59e0b, #d97706); border: none; color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 800; display: flex; align-items: center; gap: 4px; cursor: pointer; box-shadow: 0 4px 10px rgba(245,158,11,0.3); animation: pulseGlow 2s infinite;">🎬 Edit Video</button>
+    </div>
     <button onclick="toggleMenu('right')" style="background:none; color:white; font-size:22px; padding:0;">👤</button>
 </div>
 
@@ -270,6 +283,49 @@
         <div id="hijriResultBox" style="margin-top:20px; display:none; background:#ecfdf5; border:1px solid #a7f3d0; padding:15px; border-radius:10px; text-align:center;">
             <p id="hijriResultText" style="margin:0; color:#065f46; font-size:15px; line-height:1.6;"></p>
         </div>
+    </div>
+</div>
+
+<div id="videoEditorPage">
+    <div class="chat-header">
+        <h3 style="margin:0; font-size:18px;">🎬 Auto Magic Video Editor</h3>
+        <button onclick="closeVideoEditor()" style="background:none; color:white; font-size:18px; border:none;">❌</button>
+    </div>
+    
+    <div class="editor-container">
+        <div class="canvas-preview-box">
+            <canvas id="editorCanvas"></canvas>
+            <div id="editorStatusText" style="position: absolute; bottom: 10px; background: rgba(0,0,0,0.6); padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; color: #10b981;">Ready to Create</div>
+        </div>
+
+        <div class="timeline-box">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; align-items: center;">
+                <b style="font-size: 14px; color: #94a3b8;">🎞️ Photo Layers (Timeline)</b>
+                <button onclick="document.getElementById('editorPhotoInput').click()" style="background: var(--primary); font-size: 12px; padding: 6px 12px; color: white; border-radius: 6px;">➕ Add Photos</button>
+            </div>
+            <input type="file" id="editorPhotoInput" accept="image/*" multiple style="display: none;" onchange="handleEditorPhotos(this)">
+            
+            <div class="timeline-scroll" id="editorTimeline">
+                <span style="color:#64748b; font-size:12px; width:100%; text-align:center; padding: 10px 0;">Empty Timeline. Add photos to generate!</span>
+            </div>
+        </div>
+
+        <div class="timeline-box" style="margin-top: -6px;">
+            <b style="font-size: 14px; color: #94a3b8; display: block; margin-bottom: 8px;">🎵 Audio Track (Music)</b>
+            <button onclick="document.getElementById('editorAudioInput').click()" style="background: #475569; font-size: 12px; padding: 8px 12px; color: white; width: 100%; text-align: left; border-radius: 8px; border: 1px dashed #64748b;" id="musicStatusBtn">🎵 Choose Background Music (.mp3)</button>
+            <input type="file" id="editorAudioInput" accept="audio/*" style="display: none;" onchange="handleEditorMusic(this)">
+        </div>
+
+        <div>
+            <label style="font-size:13px; color:#94a3b8; display:block; margin-bottom:4px;">⏱️ Speed (Seconds per photo):</label>
+            <select id="photoSpeedSelect" style="background:#1e293b; color:white; border-color:#334155;">
+                <option value="1500">1.5 Seconds Fast Beats</option>
+                <option value="2500" selected>2.5 Seconds Normal</option>
+                <option value="4000">4.0 Seconds Slow Motion</option>
+            </select>
+        </div>
+
+        <button id="generateVideoBtn" onclick="generateMagicVideo()" style="background: linear-gradient(135deg, #10b981, #059669); color: white; width: 100%; padding: 14px; font-size: 16px; font-weight: bold; box-shadow: 0 4px 12px rgba(16,185,129,0.3); margin-top: 5px;">🎬 Export & Save High-Quality Video</button>
     </div>
 </div>
 
@@ -691,6 +747,185 @@
             `<span style="color:#059669; font-weight:bold;">Masha Allah! Islami saal ke hisab se aap ki umar ${islamiAge} saal hogi.</span>`;
             
         document.getElementById('hijriResultBox').style.display = 'block';
+    }
+
+    // --- NEW JAVASCRIPT: Lightweight Client-Side Media Core Engine ---
+    let editorPhotosList = [];
+    let editorAudioBlob = null;
+    let isProcessingVideo = false;
+
+    function openVideoEditor() { document.getElementById('videoEditorPage').style.display = 'flex'; }
+    function closeVideoEditor() { document.getElementById('videoEditorPage').style.display = 'none'; }
+
+    function handleEditorPhotos(input) {
+        if (input.files) {
+            let filesArray = Array.from(input.files);
+            filesArray.forEach(file => {
+                let r = new FileReader();
+                r.onload = function(e) {
+                    editorPhotosList.push(e.target.result);
+                    renderEditorTimeline();
+                };
+                r.readAsDataURL(file);
+            });
+        }
+        input.value = "";
+    }
+
+    function handleEditorMusic(input) {
+        if (input.files && input.files[0]) {
+            editorAudioBlob = input.files[0];
+            document.getElementById('musicStatusBtn').innerText = "🎵 Track Attached: " + editorAudioBlob.name.substring(0, 22) + "...";
+            document.getElementById('musicStatusBtn').style.background = "#0284c7";
+        }
+    }
+
+    function deleteTimelineItem(idx) {
+        editorPhotosList.splice(idx, 1);
+        renderEditorTimeline();
+    }
+
+    function renderEditorTimeline() {
+        let t = document.getElementById('editorTimeline');
+        if (editorPhotosList.length === 0) {
+            t.innerHTML = `<span style="color:#64748b; font-size:12px; width:100%; text-align:center; padding: 10px 0;">Empty Timeline. Add photos to generate!</span>`;
+            return;
+        }
+        t.innerHTML = "";
+        editorPhotosList.forEach((src, index) => {
+            t.innerHTML += `<div style="position:relative; flex-shrink:0;">
+                <img src="${src}" class="timeline-item">
+                <span class="del-img" onclick="deleteTimelineItem(${index})">×</span>
+            </div>`;
+        });
+    }
+
+    async function generateMagicVideo() {
+        if (editorPhotosList.length === 0) return alert("Pehle timeline mein kam se kam 1-2 Photos add karein!");
+        if (isProcessingVideo) return;
+
+        isProcessingVideo = true;
+        let exportBtn = document.getElementById('generateVideoBtn');
+        let statusLabel = document.getElementById('editorStatusText');
+        
+        exportBtn.innerText = "⚡ Rendering Video Layers (Hold tight)...";
+        exportBtn.style.background = "#b45309";
+        statusLabel.innerText = "🔴 Exporting Track...";
+
+        let cvs = document.getElementById('editorCanvas');
+        let ctx = cvs.getContext('2d');
+        cvs.width = 640;
+        cvs.height = 640; // High performance standard resolution for mid-range RAMs
+
+        // High precision AudioContext context rendering loop
+        let audioCtx, audioSrc, audioDest, mixedAudioTrack;
+        let audioPlayback = new Audio();
+
+        if (editorAudioBlob) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            audioPlayback.src = URL.createObjectURL(editorAudioBlob);
+            audioPlayback.loop = false;
+            audioSrc = audioCtx.createMediaElementSource(audioPlayback);
+            audioDest = audioCtx.createMediaStreamDestination();
+            audioSrc.connect(audioDest);
+            audioSrc.connect(audioCtx.destination);
+            mixedAudioTrack = audioDest.stream.getAudioTracks()[0];
+        }
+
+        let cvsStream = cvs.captureStream(24); // 24 FPS Standard Cinematic Smooth Render
+        let finalStream = new MediaStream();
+        finalStream.addTrack(cvsStream.getVideoTracks()[0]);
+        if (mixedAudioTrack) finalStream.addTrack(mixedAudioTrack);
+
+        let optionMime = { mimeType: 'video/webm;codecs=vp8' };
+        if (!MediaRecorder.isTypeSupported(optionMime.mimeType)) optionMime = { mimeType: 'video/mp4' };
+
+        let recorder;
+        try { recorder = new MediaRecorder(finalStream, optionMime); } catch(err) { recorder = new MediaRecorder(finalStream); }
+
+        let chunkData = [];
+        recorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunkData.push(e.data); };
+        
+        recorder.onstop = () => {
+            let videoBlob = new Blob(chunkData, { type: recorder.mimeType || 'video/mp4' });
+            let downloadUrl = URL.createObjectURL(videoBlob);
+            let dlLink = document.createElement('a');
+            dlLink.href = downloadUrl;
+            dlLink.download = 'WorkerApp_Magic_Video_' + Date.now() + '.mp4';
+            dlLink.click();
+
+            if (audioPlayback) audioPlayback.pause();
+            isProcessingVideo = false;
+            exportBtn.innerText = "🎬 Export & Save High-Quality Video";
+            exportBtn.style.background = "linear-gradient(135deg, #10b981, #059669)";
+            statusLabel.innerText = "Ready to Create";
+            alert("🎉 Masha Allah! Aapki video successfully ready hokar download folders mein save ho chuki hai!");
+        };
+
+        // Cache files internally as safe Image object frames
+        let loadedImgObjects = [];
+        for (let base64 of editorPhotosList) {
+            let imgObj = new Image();
+            imgObj.src = base64;
+            await new Promise(resolve => imgObj.onload = resolve);
+            loadedImgObjects.push(imgObj);
+        }
+
+        if (editorAudioBlob) {
+            await audioCtx.resume();
+            audioPlayback.play();
+        }
+
+        recorder.start();
+
+        let singlePhotoDuration = parseInt(document.getElementById('photoSpeedSelect').value);
+        let fadeCrossTransition = 400; // 0.4s custom crossfade overlay
+        let initialTimeTrack = Date.now();
+        let totalVideoLength = loadedImgObjects.length * singlePhotoDuration;
+
+        function runLiveRenderEngineLoop() {
+            let timeDiff = Date.now() - initialTimeTrack;
+            if (timeDiff >= totalVideoLength) {
+                recorder.stop();
+                return;
+            }
+
+            let currentPointer = Math.floor(timeDiff / singlePhotoDuration);
+            let nextPointer = (currentPointer + 1) % loadedImgObjects.length;
+            let currentModulo = timeDiff % singlePhotoDuration;
+
+            ctx.clearRect(0, 0, cvs.width, cvs.height);
+            ctx.fillStyle = "#0b1329"; // Slate dark canvas template background
+            ctx.fillRect(0, 0, cvs.width, cvs.height);
+
+            // Render primary layer image
+            ctx.globalAlpha = 1.0;
+            if (loadedImgObjects[currentPointer]) {
+                drawCenteredLayer(ctx, loadedImgObjects[currentPointer], cvs.width, cvs.height);
+            }
+
+            // Apply smooth crossfade transition near ending threshold
+            if (currentModulo > (singlePhotoDuration - fadeCrossTransition) && currentPointer < loadedImgObjects.length - 1) {
+                let opacityStep = (currentModulo - (singlePhotoDuration - fadeCrossTransition)) / fadeCrossTransition;
+                ctx.globalAlpha = opacityStep;
+                if (loadedImgObjects[nextPointer]) {
+                    drawCenteredLayer(ctx, loadedImgObjects[nextPointer], cvs.width, cvs.height);
+                }
+            }
+
+            if (isProcessingVideo) requestAnimationFrame(runLiveRenderEngineLoop);
+        }
+
+        function drawCenteredLayer(context2d, img, maxWidth, maxHeight) {
+            let scaleRatio = Math.min(maxWidth / img.width, maxHeight / img.height);
+            let newWidth = img.width * scaleRatio;
+            let newHeight = img.height * scaleRatio;
+            let posX = (maxWidth - newWidth) / 2;
+            let posY = (maxHeight - newHeight) / 2;
+            context2d.drawImage(img, posX, posY, newWidth, newHeight);
+        }
+
+        runLiveRenderEngineLoop();
     }
 
     setInterval(() => {
